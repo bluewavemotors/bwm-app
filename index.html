@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BWM Inventory</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="header">
+  <h2>BWM Inventory</h2>
+
+  <input type="text" id="search" placeholder="Search brand, model, fuel, color...">
+
+  <label style="display:block; margin-top:8px; font-size:14px;">
+    <input type="checkbox" id="showroomOnly">
+    Show In Showroom Only
+  </label>
+
+  <select id="budgetFilter" style="width:100%; padding:8px; margin-top:8px; border-radius:6px;">
+    <option value="">All Budgets</option>
+    <option value="1000000">Under 10 Lakhs</option>
+    <option value="2000000">Under 20 Lakhs</option>
+    <option value="3000000">Under 30 Lakhs</option>
+    <option value="5000000">Under 50 Lakhs</option>
+  </select>
+</div>
+
+
+  <div id="carList"></div>
+
+  <script src="app.js"></script>
+
+</body>
+</html>
