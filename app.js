@@ -167,16 +167,4 @@ document.getElementById("search").addEventListener("input", applyFilters);
 document.getElementById("showroomOnly").addEventListener("change", applyFilters);
 document.getElementById("budgetFilter").addEventListener("change", applyFilters);
 
-async function loadCars() {
-
-  document.getElementById("loading").style.display = "block";
-
-  const response = await fetch(API_URL);
-  const data = await response.json();
-
-  carsData = data.filter(car => car.brand && car.model);
-
-  document.getElementById("loading").style.display = "none";
-
-  displayCars(carsData);
-}
+loadCars();
