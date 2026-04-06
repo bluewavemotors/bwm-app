@@ -68,7 +68,12 @@ function doGet(e) {
   });
 
   // 🔥 Version changes ONLY when sheet changes.
-  const lastUpdated = SpreadsheetApp.getActiveSpreadsheet().getLastUpdated().getTime();
+  const lastUpdated = Utilities.base64Encode(
+    Utilities.computeDigest(
+      Utilities.DigestAlgorithm.MD5,
+      JSON.stringify(data)
+    )
+  );
 
   return ContentService
     .createTextOutput(JSON.stringify({
@@ -305,21 +310,24 @@ function applyFilters() {
       ? (car.showroom && !car.booked)
       : true;
 
-	const carPriceNumber = parsePrice(car.price);
+    const carPriceNumber = parsePrice(car.price);
 
-	const matchesBudget = budgetLimit
-	  ? carPriceNumber <= Number(budgetLimit)
-	  : true;
+    const matchesBudget = budgetLimit
+      ? carPriceNumber <= Number(budgetLimit)
+      : true;
 
     return matchesSearch && matchesShowroom && matchesBudget;
   });
 
   displayCars(filtered);
+
+  // ✅ SAVE FILTERS
   localStorage.setItem("bwm_filters", JSON.stringify({
-  search: document.getElementById("search").value,
-  showroomOnly: document.getElementById("showroomOnly").checked,
-  budget: document.getElementById("budgetFilter").value
-}));
+    search: document.getElementById("search").value,
+    showroomOnly: document.getElementById("showroomOnly").checked,
+    budget: document.getElementById("budgetFilter").value
+  }));
+}
 
 
 document.getElementById("search").addEventListener("input", applyFilters);
@@ -328,8 +336,12 @@ document.getElementById("budgetFilter").addEventListener("change", applyFilters)
 
 loadCars();
 
-document.getElementById("lastUpdated").innerText =
-  "Last updated: " + localStorage.getItem("bwm_last_updated");
+const lastUpdated = localStorage.getItem("bwm_last_updated");
+
+if (lastUpdated) {
+  document.getElementById("lastUpdated").innerText =
+    "Last updated: " + lastUpdated;
+}
 
 function clearSearch() {
   document.getElementById("search").value = "";
