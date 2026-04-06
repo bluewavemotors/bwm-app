@@ -28,21 +28,18 @@ function parsePrice(price) {
 async function loadCars() {
 
   const loadingDiv = document.getElementById("loading");
+  const lastUpdatedDiv = document.getElementById("lastUpdated");
 
   try {
     loadingDiv.style.display = "block";
-    loadingDiv.innerText = "Loading cars...";
+    loadingDiv.innerText = "⏳ Loading cars...";
 
     const response = await fetch(API_URL);
 
-    // Check HTTP error
-    if (!response.ok) {
-      throw new Error("Server error");
-    }
+    if (!response.ok) throw new Error("API error");
 
     const data = await response.json();
 
-    // Check empty data
     if (!data || data.length === 0) {
       loadingDiv.innerText = "No cars available";
       return;
@@ -50,31 +47,53 @@ async function loadCars() {
 
     carsData = data.filter(car => car.brand && car.model);
 
+    // ✅ Save offline data
+    localStorage.setItem("bwm_cars", JSON.stringify(carsData));
+
+    // ✅ Save timestamp
+    const now = new Date().toLocaleString();
+    localStorage.setItem("bwm_last_updated", now);
+
     loadingDiv.style.display = "none";
+
+    // ✅ Show last updated
+    lastUpdatedDiv.innerText = "Last updated: " + now;
 
     displayCars(carsData);
 
   } catch (error) {
 
-  console.error(error);
+    console.error(error);
 
-  loadingDiv.style.display = "block";
-  loadingDiv.innerHTML = `
-    <div style="text-align:center;">
-      ⚠️ Unable to load cars<br><br>
-      <small>Check internet or try again</small><br><br>
-      <button onclick="loadCars()" style="
-        padding:10px 15px;
-        border:none;
-        border-radius:6px;
-        background:#111;
-        color:white;
-        font-size:14px;
-      ">
-        🔄 Retry
-      </button>
-    </div>
-  `;
+    const cached = localStorage.getItem("bwm_cars");
+    const lastUpdated = localStorage.getItem("bwm_last_updated");
+
+    if (cached) {
+
+      carsData = JSON.parse(cached);
+
+      loadingDiv.innerHTML = `
+        ⚠️ Offline Mode<br>
+        <small>Showing last saved data</small><br><br>
+        <button onclick="loadCars()">🔄 Retry</button>
+      `;
+
+      lastUpdatedDiv.innerText = lastUpdated
+        ? "Last updated: " + lastUpdated
+        : "";
+
+      displayCars(carsData);
+
+    } else {
+
+      loadingDiv.innerHTML = `
+        ❌ No data available<br>
+        <small>Please connect to internet</small><br><br>
+        <button onclick="loadCars()">🔄 Retry</button>
+      `;
+
+      lastUpdatedDiv.innerText = "";
+    }
   }
 }
 
@@ -213,3 +232,6 @@ document.getElementById("showroomOnly").addEventListener("change", applyFilters)
 document.getElementById("budgetFilter").addEventListener("change", applyFilters);
 
 loadCars();
+
+document.getElementById("lastUpdated").innerText =
+  "Last updated: " + localStorage.getItem("bwm_last_updated");
