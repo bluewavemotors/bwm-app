@@ -1,37 +1,28 @@
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
 body {
+  display: flex;
+  flex-direction: column;
   font-family: Arial, sans-serif;
   background: #f2f2f2;
-  margin: 0;
-  height: 100vh;
-  overflow: hidden;   /* 🔥 prevent body scroll */
 }
-
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
-
-#carList {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  height: calc(100vh - 180px); /* adjust if needed */
-  overflow-y: auto;
-  padding-bottom: 20px;
-}
-
 
 html {
   scroll-behavior: smooth;
 }
 
-html, body {
-  height: 100%;
+#carList {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 20px;
+  min-height: 0;   /* 🔥 MUST */
 }
 
-#carList {
-  min-height: 80vh;
+#loading, #lastUpdated {
+  flex-shrink: 0;
 }
 
 .header {
