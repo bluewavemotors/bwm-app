@@ -25,6 +25,59 @@ function parsePrice(price) {
   return parseFloat(clean);
 }
 
+function doGet(e) {
+
+  const sheet = SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getSheetByName("To-Share");
+
+  const data = sheet.getDataRange().getValues();
+  const headers = data.shift();
+
+  const map = {
+    "SL NO": "id",
+    "REG NO": "regNo",
+    "BRAND": "brand",
+    "MODEL": "model",
+    "VARIANT": "variant",
+    "PRICE": "price",
+    "COLOR": "color",
+    "YEAR": "year",
+    "FUEL": "fuel",
+    "MILEAGE": "km",
+    "OWNER": "owner",
+    "Ins TP Expiry": "tpExpiry",
+    "Ins OD Expiry": "odExpiry",
+    "IDV": "idv",
+    "In Showroom": "status"
+  };
+
+  let cars = data.map(row => {
+
+    let obj = {};
+
+    headers.forEach((h, i) => {
+      let key = map[h] || h;
+      obj[key] = row[i];
+    });
+
+    obj.showroom = (obj.status || "").toString().includes("Yes");
+    obj.booked = (obj.status || "").toString().includes("Booked");
+
+    return obj;
+  });
+
+  // 🔥 ADD THIS
+  const lastUpdated = new Date().toISOString();
+
+  return ContentService
+    .createTextOutput(JSON.stringify({
+      lastUpdated: lastUpdated,
+      cars: cars
+    }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 async function loadCars() {
 
   const loadingDiv = document.getElementById("loading");
@@ -38,25 +91,41 @@ async function loadCars() {
 
     if (!response.ok) throw new Error("API error");
 
-    const data = await response.json();
+    const result = await response.json();
 
-    if (!data || data.length === 0) {
-      loadingDiv.innerText = "No cars available";
-      return;
+    const serverVersion = result.lastUpdated;
+    const storedVersion = localStorage.getItem("bwm_version");
+
+    // ✅ If NO CHANGE → use cached data
+    if (storedVersion === serverVersion) {
+
+      const cached = localStorage.getItem("bwm_cars");
+
+      if (cached) {
+        carsData = JSON.parse(cached);
+
+        loadingDiv.style.display = "none";
+
+        lastUpdatedDiv.innerText =
+          "Last updated: " + localStorage.getItem("bwm_last_updated");
+
+        displayCars(carsData);
+        return;
+      }
     }
 
-    carsData = data.filter(car => car.brand && car.model);
+    // 🔥 Data changed → update fresh data
+    carsData = result.cars.filter(car => car.brand && car.model);
 
-    // ✅ Save offline data
+    // Save cache
     localStorage.setItem("bwm_cars", JSON.stringify(carsData));
+    localStorage.setItem("bwm_version", serverVersion);
 
-    // ✅ Save timestamp
     const now = new Date().toLocaleString();
     localStorage.setItem("bwm_last_updated", now);
 
     loadingDiv.style.display = "none";
 
-    // ✅ Show last updated
     lastUpdatedDiv.innerText = "Last updated: " + now;
 
     displayCars(carsData);
