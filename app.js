@@ -27,16 +27,55 @@ function parsePrice(price) {
 
 async function loadCars() {
 
-  document.getElementById("loading").style.display = "block";
+  const loadingDiv = document.getElementById("loading");
 
-  const response = await fetch(API_URL);
-  const data = await response.json();
+  try {
+    loadingDiv.style.display = "block";
+    loadingDiv.innerText = "Loading cars...";
 
-  carsData = data.filter(car => car.brand && car.model);
+    const response = await fetch(API_URL);
 
-  document.getElementById("loading").style.display = "none";
+    // Check HTTP error
+    if (!response.ok) {
+      throw new Error("Server error");
+    }
 
-  displayCars(carsData);
+    const data = await response.json();
+
+    // Check empty data
+    if (!data || data.length === 0) {
+      loadingDiv.innerText = "No cars available";
+      return;
+    }
+
+    carsData = data.filter(car => car.brand && car.model);
+
+    loadingDiv.style.display = "none";
+
+    displayCars(carsData);
+
+  } catch (error) {
+
+  console.error(error);
+
+  loadingDiv.style.display = "block";
+  loadingDiv.innerHTML = `
+    <div style="text-align:center;">
+      ⚠️ Unable to load cars<br><br>
+      <small>Check internet or try again</small><br><br>
+      <button onclick="loadCars()" style="
+        padding:10px 15px;
+        border:none;
+        border-radius:6px;
+        background:#111;
+        color:white;
+        font-size:14px;
+      ">
+        🔄 Retry
+      </button>
+    </div>
+  `;
+  }
 }
 
 function displayCars(cars) {
