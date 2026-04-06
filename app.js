@@ -8,79 +8,16 @@ function formatIndianNumber(price) {
   return number.toLocaleString('en-IN');
 }
 
-
 function parsePrice(price) {
   if (!price) return 0;
 
   let clean = price.toString().replace(/,/g, '').toLowerCase().trim();
 
-  if (clean.includes('lakh')) {
-    return parseFloat(clean) * 100000;
-  }
-
-  if (clean.includes('l')) {
+  if (clean.includes('lakh') || clean.includes('l')) {
     return parseFloat(clean) * 100000;
   }
 
   return parseFloat(clean);
-}
-
-function doGet(e) {
-
-  const sheet = SpreadsheetApp
-    .getActiveSpreadsheet()
-    .getSheetByName("To-Share");
-
-  const data = sheet.getDataRange().getValues();
-  const headers = data.shift();
-
-  const map = {
-    "SL NO": "id",
-    "REG NO": "regNo",
-    "BRAND": "brand",
-    "MODEL": "model",
-    "VARIANT": "variant",
-    "PRICE": "price",
-    "COLOR": "color",
-    "YEAR": "year",
-    "FUEL": "fuel",
-    "MILEAGE": "km",
-    "OWNER": "owner",
-    "Ins TP Expiry": "tpExpiry",
-    "Ins OD Expiry": "odExpiry",
-    "IDV": "idv",
-    "In Showroom": "status"
-  };
-
-  let cars = data.map(row => {
-
-    let obj = {};
-
-    headers.forEach((h, i) => {
-      let key = map[h] || h;
-      obj[key] = row[i];
-    });
-
-    obj.showroom = (obj.status || "").toString().includes("Yes");
-    obj.booked = (obj.status || "").toString().includes("Booked");
-
-    return obj;
-  });
-
-  // 🔥 Version changes ONLY when sheet changes.
-  const lastUpdated = Utilities.base64Encode(
-    Utilities.computeDigest(
-      Utilities.DigestAlgorithm.MD5,
-      JSON.stringify(data)
-    )
-  );
-
-  return ContentService
-    .createTextOutput(JSON.stringify({
-      lastUpdated: lastUpdated,
-      cars: cars
-    }))
-    .setMimeType(ContentService.MimeType.JSON);
 }
 
 async function loadCars() {
@@ -88,7 +25,6 @@ async function loadCars() {
   const loadingDiv = document.getElementById("loading");
   const lastUpdatedDiv = document.getElementById("lastUpdated");
 
-  // ✅ Restore saved filters (VERY IMPORTANT)
   const savedFilters = JSON.parse(localStorage.getItem("bwm_filters") || "{}");
 
   document.getElementById("search").value = savedFilters.search || "";
@@ -108,20 +44,17 @@ async function loadCars() {
     let serverVersion;
     let cars;
 
-    // 🔥 Handle BOTH formats
     if (Array.isArray(result)) {
       cars = result;
       serverVersion = "old";
     } else {
-      cars = result.cars;
+      cars = result.cars || [];
       serverVersion = result.lastUpdated;
     }
 
     const storedVersion = localStorage.getItem("bwm_version");
 
-    // ✅ If NO CHANGE → use cached data
     if (storedVersion === serverVersion) {
-
       const cached = localStorage.getItem("bwm_cars");
 
       if (cached) {
@@ -132,16 +65,13 @@ async function loadCars() {
         lastUpdatedDiv.innerText =
           "Last updated: " + localStorage.getItem("bwm_last_updated");
 
-        // ✅ Apply filters instead of displayCars
         applyFilters();
         return;
       }
     }
 
-    // 🔥 Data changed → update fresh data
     carsData = cars.filter(car => car.brand && car.model);
 
-    // Save cache
     localStorage.setItem("bwm_cars", JSON.stringify(carsData));
     localStorage.setItem("bwm_version", serverVersion);
 
@@ -152,7 +82,6 @@ async function loadCars() {
 
     lastUpdatedDiv.innerText = "Last updated: " + now;
 
-    // ✅ Apply filters after refresh
     applyFilters();
 
   } catch (error) {
@@ -176,7 +105,6 @@ async function loadCars() {
         ? "Last updated: " + lastUpdated
         : "";
 
-      // ✅ Apply filters in offline also
       applyFilters();
 
     } else {
@@ -196,19 +124,19 @@ function displayCars(cars) {
   const list = document.getElementById("carList");
   list.innerHTML = "";
 
+  if (cars.length === 0) {
+    list.innerHTML = "<div style='text-align:center;padding:20px;'>No cars found</div>";
+    return;
+  }
+
   cars.forEach(car => {
 
     let statusClass = "yellow";
-    let statusText = "Not in Showroom";
+    let statusText = "Yard / Incoming";
 
     if (car.showroom && !car.booked) {
       statusClass = "green";
       statusText = "Available";
-    }
-
-    if (!car.showroom && !car.booked) {
-      statusClass = "yellow";
-      statusText = "Yard / Incoming";
     }
 
     if (car.booked) {
@@ -231,9 +159,7 @@ function displayCars(cars) {
 }
 
 function showDetails(id) {
-
   const car = carsData.find(c => c.id == id);
-
   const list = document.getElementById("carList");
 
   list.innerHTML = `
@@ -258,11 +184,10 @@ function showDetails(id) {
 }
 
 function goBack() {
-  applyFilters(); // maintain filter state when going back
+  applyFilters();
 }
 
 function shareCar(id) {
-
   const car = carsData.find(c => c.id == id);
 
   const message =
@@ -280,11 +205,7 @@ Available at BWM Thrissur.
 Would you like to schedule a visit?
 `;
 
-  const encodedMessage = encodeURIComponent(message);
-
-  const whatsappURL = `https://wa.me/?text=${encodedMessage}`;
-
-  window.open(whatsappURL, "_blank");
+  window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
 }
 
 function applyFilters() {
@@ -321,7 +242,6 @@ function applyFilters() {
 
   displayCars(filtered);
 
-  // ✅ SAVE FILTERS
   localStorage.setItem("bwm_filters", JSON.stringify({
     search: document.getElementById("search").value,
     showroomOnly: document.getElementById("showroomOnly").checked,
@@ -329,15 +249,19 @@ function applyFilters() {
   }));
 }
 
+// Event Listeners
+document.getElementById("search").addEventListener("input", function () {
+  applyFilters();
+  this.nextElementSibling.style.display = this.value ? "block" : "none";
+});
 
-document.getElementById("search").addEventListener("input", applyFilters);
 document.getElementById("showroomOnly").addEventListener("change", applyFilters);
 document.getElementById("budgetFilter").addEventListener("change", applyFilters);
 
+// Init
 loadCars();
 
 const lastUpdated = localStorage.getItem("bwm_last_updated");
-
 if (lastUpdated) {
   document.getElementById("lastUpdated").innerText =
     "Last updated: " + lastUpdated;
@@ -345,5 +269,6 @@ if (lastUpdated) {
 
 function clearSearch() {
   document.getElementById("search").value = "";
+  document.querySelector("#search + span").style.display = "none";
   applyFilters();
 }

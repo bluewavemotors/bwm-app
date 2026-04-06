@@ -9,32 +9,45 @@
 <body>
 
 <div class="header">
+  
   <div class="header-top">
     <img src="logo.png" class="logo">
     <h2>BWM Inventory</h2>
   </div>
 
-<div style="position:relative;">
-  <input type="text" id="search" placeholder="Search brand, model, fuel, color..." style="padding-right:35px;">
-  
-  <span onclick="clearSearch()" style="
-    position:absolute;
-    right:10px;
-    top:50%;
-    transform:translateY(-50%);
-    cursor:pointer;
-    font-size:18px;
-    color:#888;
-  ">
-    ✖
-  </span>
-</div>
+  <!-- 🔍 Search with Clear Button -->
+  <div style="position:relative;">
+    <input 
+      type="text" 
+      id="search" 
+      placeholder="Search brand, model, fuel, color..." 
+      style="padding-right:35px;"
+    >
+    
+    <span 
+      onclick="clearSearch()" 
+      style="
+        position:absolute;
+        right:10px;
+        top:50%;
+        transform:translateY(-50%);
+        cursor:pointer;
+        font-size:18px;
+        color:#888;
+        display:none;
+      "
+    >
+      ✖
+    </span>
+  </div>
 
-  <label class="filter-label">
+  <!-- ✅ Checkbox aligned -->
+  <label class="filter-row">
     <input type="checkbox" id="showroomOnly">
-    Show In Showroom Only
+    <span>Show In Showroom Only</span>
   </label>
 
+  <!-- 💰 Budget Filter -->
   <select id="budgetFilter" class="dropdown">
     <option value="">All Budgets</option>
     <option value="1000000">Under 10 Lakhs</option>
@@ -43,7 +56,7 @@
     <option value="5000000">Under 50 Lakhs</option>
   </select>
 
-  <!-- 🔄 Refresh Button -->
+  <!-- 🔄 Refresh -->
   <button onclick="loadCars()" style="
     margin-top:8px;
     padding:6px 10px;
@@ -54,16 +67,23 @@
   ">
     🔄 Refresh
   </button>
+
 </div>
 
-<!-- ⏳ Loading / Status -->
+<!-- ⏳ Loading -->
 <div id="loading" style="text-align:center; padding:20px;">
   Loading cars...
 </div>
 
 <!-- 🕒 Last Updated -->
-<div id="lastUpdated" style="text-align:center; font-size:12px; color:#666;"></div>
+<div id="lastUpdated" style="
+  text-align:center;
+  font-size:12px;
+  color:#000;
+  margin-top:5px;
+"></div>
 
+<!-- 🚗 Cars List -->
 <div id="carList"></div>
 
 <script src="app.js"></script>

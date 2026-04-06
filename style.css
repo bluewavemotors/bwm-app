@@ -2,6 +2,11 @@ body {
   font-family: Arial, sans-serif;
   margin: 0;
   background: #f2f2f2;
+  overflow-y: scroll;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 .header {
@@ -24,6 +29,7 @@ body {
   padding: 12px;
   border-radius: 10px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  cursor: pointer;
 }
 
 .price {
@@ -61,10 +67,16 @@ body {
   height: 40px;
 }
 
-.filter-label {
-  display: block;
-  margin-top: 8px;
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
   font-size: 14px;
+}
+
+.filter-row input {
+  transform: scale(1.2);
 }
 
 .dropdown {
@@ -72,4 +84,8 @@ body {
   padding: 8px;
   margin-top: 8px;
   border-radius: 6px;
+}
+
+button {
+  cursor: pointer;
 }
