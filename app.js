@@ -107,7 +107,7 @@ function displayCars(cars) {
         <div><strong>${car.brand} ${car.model}</strong></div>
         <div>${car.variant || ""}</div>
         <div>${car.year} | ${car.fuel} | ${car.km} km</div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+        <div class="price-status-row">
           <div class="price">₹ ${formatIndianNumber(car.price)}</div>
           <div class="status ${statusClass}">${statusText}</div>
         </div>
