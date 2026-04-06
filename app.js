@@ -67,8 +67,8 @@ function doGet(e) {
     return obj;
   });
 
-  // 🔥 ADD THIS
-  const lastUpdated = new Date().toISOString();
+  // 🔥 Version changes ONLY when sheet changes.
+  const lastUpdated = SpreadsheetApp.getActiveSpreadsheet().getLastUpdated().getTime();
 
   return ContentService
     .createTextOutput(JSON.stringify({
