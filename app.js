@@ -21,7 +21,29 @@ function parsePrice(price) {
   return parseFloat(clean);
 }
 
-// 🔥 CENTRAL FUNCTION FOR X BUTTON
+// 🕒 Date Formatting
+function formatDateTime(date) {
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  const d = new Date(date);
+
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = months[d.getMonth()];
+  const year = d.getFullYear();
+
+  let hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const seconds = String(d.getSeconds()).padStart(2, '0');
+
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12;
+
+  const hh = String(hours).padStart(2, '0');
+
+  return `${day}-${month}-${year} ${hh}:${minutes}:${seconds} ${ampm}`;
+}
+
+// 🔥 X BUTTON CONTROL
 function updateClearButton() {
   const searchInput = document.getElementById("search");
   const clearBtn = document.getElementById("clearBtn");
@@ -41,7 +63,6 @@ async function loadCars() {
   document.getElementById("showroomOnly").checked = savedFilters.showroomOnly || false;
   document.getElementById("budgetFilter").value = savedFilters.budget || "";
 
-  // ✅ Ensure X button correct after restore
   updateClearButton();
 
   try {
@@ -75,8 +96,10 @@ async function loadCars() {
 
         loadingDiv.style.display = "none";
 
-        lastUpdatedDiv.innerText =
-          "Last updated: " + localStorage.getItem("bwm_last_updated");
+        const storedDate = localStorage.getItem("bwm_last_updated");
+        lastUpdatedDiv.innerText = storedDate
+          ? "Last updated: " + formatDateTime(storedDate)
+          : "";
 
         applyFilters();
         return;
@@ -88,12 +111,13 @@ async function loadCars() {
     localStorage.setItem("bwm_cars", JSON.stringify(carsData));
     localStorage.setItem("bwm_version", serverVersion);
 
-    const now = new Date().toLocaleString();
-    localStorage.setItem("bwm_last_updated", now);
+    const nowISO = new Date().toISOString();
+    localStorage.setItem("bwm_last_updated", nowISO);
 
     loadingDiv.style.display = "none";
 
-    lastUpdatedDiv.innerText = "Last updated: " + now;
+    lastUpdatedDiv.innerText =
+      "Last updated: " + formatDateTime(nowISO);
 
     applyFilters();
 
@@ -102,7 +126,7 @@ async function loadCars() {
     console.error(error);
 
     const cached = localStorage.getItem("bwm_cars");
-    const lastUpdated = localStorage.getItem("bwm_last_updated");
+    const storedDate = localStorage.getItem("bwm_last_updated");
 
     if (cached) {
 
@@ -114,8 +138,8 @@ async function loadCars() {
         <button onclick="loadCars()">🔄 Retry</button>
       `;
 
-      lastUpdatedDiv.innerText = lastUpdated
-        ? "Last updated: " + lastUpdated
+      lastUpdatedDiv.innerText = storedDate
+        ? "Last updated: " + formatDateTime(storedDate)
         : "";
 
       applyFilters();
@@ -279,10 +303,10 @@ document.getElementById("budgetFilter").addEventListener("change", applyFilters)
 // 🚀 INIT
 loadCars();
 
-const lastUpdated = localStorage.getItem("bwm_last_updated");
-if (lastUpdated) {
+const storedDate = localStorage.getItem("bwm_last_updated");
+if (storedDate) {
   document.getElementById("lastUpdated").innerText =
-    "Last updated: " + lastUpdated;
+    "Last updated: " + formatDateTime(storedDate);
 }
 
 // ❌ CLEAR SEARCH
