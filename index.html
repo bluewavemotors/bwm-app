@@ -14,7 +14,21 @@
     <h2>BWM Inventory</h2>
   </div>
 
-  <input type="text" id="search" placeholder="Search brand, model, fuel, color...">
+<div style="position:relative;">
+  <input type="text" id="search" placeholder="Search brand, model, fuel, color..." style="padding-right:35px;">
+  
+  <span onclick="clearSearch()" style="
+    position:absolute;
+    right:10px;
+    top:50%;
+    transform:translateY(-50%);
+    cursor:pointer;
+    font-size:18px;
+    color:#888;
+  ">
+    ✖
+  </span>
+</div>
 
   <label class="filter-label">
     <input type="checkbox" id="showroomOnly">

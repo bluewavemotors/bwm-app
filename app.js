@@ -83,6 +83,13 @@ async function loadCars() {
   const loadingDiv = document.getElementById("loading");
   const lastUpdatedDiv = document.getElementById("lastUpdated");
 
+  // ✅ Restore saved filters (VERY IMPORTANT)
+  const savedFilters = JSON.parse(localStorage.getItem("bwm_filters") || "{}");
+
+  document.getElementById("search").value = savedFilters.search || "";
+  document.getElementById("showroomOnly").checked = savedFilters.showroomOnly || false;
+  document.getElementById("budgetFilter").value = savedFilters.budget || "";
+
   try {
     loadingDiv.style.display = "block";
     loadingDiv.innerText = "⏳ Loading cars...";
@@ -93,7 +100,18 @@ async function loadCars() {
 
     const result = await response.json();
 
-    const serverVersion = result.lastUpdated;
+    let serverVersion;
+    let cars;
+
+    // 🔥 Handle BOTH formats
+    if (Array.isArray(result)) {
+      cars = result;
+      serverVersion = "old";
+    } else {
+      cars = result.cars;
+      serverVersion = result.lastUpdated;
+    }
+
     const storedVersion = localStorage.getItem("bwm_version");
 
     // ✅ If NO CHANGE → use cached data
@@ -109,13 +127,14 @@ async function loadCars() {
         lastUpdatedDiv.innerText =
           "Last updated: " + localStorage.getItem("bwm_last_updated");
 
-        displayCars(carsData);
+        // ✅ Apply filters instead of displayCars
+        applyFilters();
         return;
       }
     }
 
     // 🔥 Data changed → update fresh data
-    carsData = result.cars.filter(car => car.brand && car.model);
+    carsData = cars.filter(car => car.brand && car.model);
 
     // Save cache
     localStorage.setItem("bwm_cars", JSON.stringify(carsData));
@@ -128,7 +147,8 @@ async function loadCars() {
 
     lastUpdatedDiv.innerText = "Last updated: " + now;
 
-    displayCars(carsData);
+    // ✅ Apply filters after refresh
+    applyFilters();
 
   } catch (error) {
 
@@ -151,7 +171,8 @@ async function loadCars() {
         ? "Last updated: " + lastUpdated
         : "";
 
-      displayCars(carsData);
+      // ✅ Apply filters in offline also
+      applyFilters();
 
     } else {
 
@@ -294,7 +315,12 @@ function applyFilters() {
   });
 
   displayCars(filtered);
-}
+  localStorage.setItem("bwm_filters", JSON.stringify({
+  search: document.getElementById("search").value,
+  showroomOnly: document.getElementById("showroomOnly").checked,
+  budget: document.getElementById("budgetFilter").value
+}));
+
 
 document.getElementById("search").addEventListener("input", applyFilters);
 document.getElementById("showroomOnly").addEventListener("change", applyFilters);
@@ -304,3 +330,8 @@ loadCars();
 
 document.getElementById("lastUpdated").innerText =
   "Last updated: " + localStorage.getItem("bwm_last_updated");
+
+function clearSearch() {
+  document.getElementById("search").value = "";
+  applyFilters();
+}
