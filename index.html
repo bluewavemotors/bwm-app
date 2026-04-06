@@ -9,16 +9,19 @@
 <body>
 
 <div class="header">
-  <h2>BWM Inventory</h2>
+  <div class="header-top">
+    <img src="logo.png" class="logo">
+    <h2>BWM Inventory</h2>
+  </div>
 
   <input type="text" id="search" placeholder="Search brand, model, fuel, color...">
 
-  <label style="display:block; margin-top:8px; font-size:14px;">
+  <label class="filter-label">
     <input type="checkbox" id="showroomOnly">
     Show In Showroom Only
   </label>
 
-  <select id="budgetFilter" style="width:100%; padding:8px; margin-top:8px; border-radius:6px;">
+  <select id="budgetFilter" class="dropdown">
     <option value="">All Budgets</option>
     <option value="1000000">Under 10 Lakhs</option>
     <option value="2000000">Under 20 Lakhs</option>
@@ -27,6 +30,9 @@
   </select>
 </div>
 
+<div id="loading" style="text-align:center; padding:20px;">
+  Loading cars...
+</div>
 
   <div id="carList"></div>
 
