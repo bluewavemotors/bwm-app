@@ -75,8 +75,16 @@ html {
   font-size: 14px;
 }
 
+/* 🔥 FORCE PERFECT ALIGNMENT */
 .filter-row input {
   transform: scale(1.2);
+  margin: 0;
+  vertical-align: middle;
+}
+
+.filter-row span {
+  display: inline-flex;
+  align-items: center;
 }
 
 .dropdown {
@@ -88,4 +96,12 @@ html {
 
 button {
   cursor: pointer;
+}
+
+#lastUpdated {
+  text-align: center;
+  font-size: 12px;
+  color: #000000;   /* pure black */
+  font-weight: 500; /* slight bold for clarity */
+  margin-top: 5px;
 }
