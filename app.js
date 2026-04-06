@@ -2,6 +2,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwwE7Vh-aojmNafegOxlHAZ
 
 let carsData = [];
 
+// 🔢 Price Formatting
 function formatIndianNumber(price) {
   const number = parsePrice(price);
   if (!number || isNaN(number)) return price;
@@ -20,6 +21,15 @@ function parsePrice(price) {
   return parseFloat(clean);
 }
 
+// 🔥 CENTRAL FUNCTION FOR X BUTTON
+function updateClearButton() {
+  const searchInput = document.getElementById("search");
+  const clearBtn = document.getElementById("clearBtn");
+
+  clearBtn.style.display = searchInput.value.trim() ? "block" : "none";
+}
+
+// 🚀 LOAD DATA
 async function loadCars() {
 
   const loadingDiv = document.getElementById("loading");
@@ -31,19 +41,12 @@ async function loadCars() {
   document.getElementById("showroomOnly").checked = savedFilters.showroomOnly || false;
   document.getElementById("budgetFilter").value = savedFilters.budget || "";
 
-  // ✅ 🔥 HANDLE CLEAR (X) BUTTON VISIBILITY AFTER RESTORE
-  const searchInput = document.getElementById("search");
-  const clearBtn = document.getElementById("clearBtn");
-
-  if (searchInput.value.trim() !== "") {
-    clearBtn.style.display = "block";
-  } else {
-    clearBtn.style.display = "none";
-  }
+  // ✅ Ensure X button correct after restore
+  updateClearButton();
 
   try {
     loadingDiv.style.display = "block";
-    loadingDiv.innerText = "⏳ Loading cars...";
+    loadingDiv.innerHTML = '<span class="loader"></span> Loading cars...';
 
     const response = await fetch(API_URL);
 
@@ -130,6 +133,7 @@ async function loadCars() {
   }
 }
 
+// 🚗 DISPLAY CARS
 function displayCars(cars) {
   const list = document.getElementById("carList");
   list.innerHTML = "";
@@ -168,6 +172,7 @@ function displayCars(cars) {
   });
 }
 
+// 🔍 DETAILS VIEW
 function showDetails(id) {
   const car = carsData.find(c => c.id == id);
   const list = document.getElementById("carList");
@@ -193,10 +198,12 @@ function showDetails(id) {
   `;
 }
 
+// 🔙 BACK
 function goBack() {
   applyFilters();
 }
 
+// 📤 SHARE
 function shareCar(id) {
   const car = carsData.find(c => c.id == id);
 
@@ -218,6 +225,7 @@ Would you like to schedule a visit?
   window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
 }
 
+// 🔎 FILTER
 function applyFilters() {
 
   const searchValue = document.getElementById("search").value.toLowerCase();
@@ -259,24 +267,16 @@ function applyFilters() {
   }));
 }
 
-// Event Listeners
-const searchInput = document.getElementById("search");
-const clearBtn = document.getElementById("clearBtn");
-
-searchInput.addEventListener("input", function () {
+// 🎯 EVENT LISTENERS
+document.getElementById("search").addEventListener("input", function () {
   applyFilters();
-
-  if (this.value.trim() !== "") {
-    clearBtn.style.display = "block";
-  } else {
-    clearBtn.style.display = "none";
-  }
+  updateClearButton();
 });
 
 document.getElementById("showroomOnly").addEventListener("change", applyFilters);
 document.getElementById("budgetFilter").addEventListener("change", applyFilters);
 
-// Init
+// 🚀 INIT
 loadCars();
 
 const lastUpdated = localStorage.getItem("bwm_last_updated");
@@ -285,12 +285,9 @@ if (lastUpdated) {
     "Last updated: " + lastUpdated;
 }
 
+// ❌ CLEAR SEARCH
 function clearSearch() {
-  const searchInput = document.getElementById("search");
-  const clearBtn = document.getElementById("clearBtn");
-
-  searchInput.value = "";
-  clearBtn.style.display = "none";
-
+  document.getElementById("search").value = "";
   applyFilters();
+  updateClearButton();
 }

@@ -73,6 +73,7 @@ html {
   gap: 8px;
   margin-top: 10px;
   font-size: 14px;
+  white-space: nowrap;
 }
 
 /* 🔥 FORCE PERFECT ALIGNMENT */
