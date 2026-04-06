@@ -31,6 +31,16 @@ async function loadCars() {
   document.getElementById("showroomOnly").checked = savedFilters.showroomOnly || false;
   document.getElementById("budgetFilter").value = savedFilters.budget || "";
 
+  // ✅ 🔥 HANDLE CLEAR (X) BUTTON VISIBILITY AFTER RESTORE
+  const searchInput = document.getElementById("search");
+  const clearBtn = document.getElementById("clearBtn");
+
+  if (searchInput.value.trim() !== "") {
+    clearBtn.style.display = "block";
+  } else {
+    clearBtn.style.display = "none";
+  }
+
   try {
     loadingDiv.style.display = "block";
     loadingDiv.innerText = "⏳ Loading cars...";
@@ -250,9 +260,17 @@ function applyFilters() {
 }
 
 // Event Listeners
-document.getElementById("search").addEventListener("input", function () {
+const searchInput = document.getElementById("search");
+const clearBtn = document.getElementById("clearBtn");
+
+searchInput.addEventListener("input", function () {
   applyFilters();
-  this.nextElementSibling.style.display = this.value ? "block" : "none";
+
+  if (this.value.trim() !== "") {
+    clearBtn.style.display = "block";
+  } else {
+    clearBtn.style.display = "none";
+  }
 });
 
 document.getElementById("showroomOnly").addEventListener("change", applyFilters);
@@ -268,7 +286,11 @@ if (lastUpdated) {
 }
 
 function clearSearch() {
-  document.getElementById("search").value = "";
-  document.querySelector("#search + span").style.display = "none";
+  const searchInput = document.getElementById("search");
+  const clearBtn = document.getElementById("clearBtn");
+
+  searchInput.value = "";
+  clearBtn.style.display = "none";
+
   applyFilters();
 }
