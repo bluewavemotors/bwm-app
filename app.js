@@ -1,3 +1,4 @@
+// version 1.1.0
 const API_URL = "https://script.google.com/macros/s/AKfycbwwE7Vh-aojmNafegOxlHAZhbqbBW9YRZI6LpjE3oAxPb70zRfKvci3CyxfkafGLF75/exec";
 
 let carsData = [];
