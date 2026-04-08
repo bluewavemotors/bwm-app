@@ -57,13 +57,12 @@ async function loadCars() {
 
     const response = await fetch(API_URL);
     const result = await response.json();
-
-    carsData = result.cars || [];
+    carsData = result?.cars || [];
 
     loadingDiv.style.display = "none";
 
     lastUpdatedDiv.innerText =
-      "Last updated: " + formatDateTime(new Date());
+      "Last updated: " + formatDateTime(new Date().toISOString());
 
     applyFilters();
 
@@ -82,44 +81,47 @@ function displayCars(cars) {
     return;
   }
 
-  cars.forEach(car => {
+cars.forEach(car => {
 
-    const firstImage = car.images ? car.images.split(",")[0] : "";
+  const firstImage = car.images ? car.images.split(",")[0] : "";
 
-    let statusClass = "yellow";
-    let statusText = "Yard";
+  let statusClass = "yellow";
+  let statusText = "Yard / Incoming";
 
-    if (car.showroom && !car.booked) {
-      statusClass = "green";
-      statusText = "Available";
-    }
+  if (car.showroom && !car.booked) {
+    statusClass = "green";
+    statusText = "Available";
+  }
 
-    if (car.booked) {
-      statusClass = "grey";
-      statusText = "Booked";
-    }
+  if (car.booked) {
+    statusClass = "grey";
+    statusText = "Booked";
+  }
 
-    list.innerHTML += `
-      <div class="car-card" onclick="showDetails('${car.id}')">
+  list.innerHTML += `
+    <div class="car-card" onclick="showDetails('${car.id}')">
 
-        ${firstImage ? `<img src="${firstImage}" class="car-image" loading="lazy">` : ""}
+      ${firstImage ? `<img src="${firstImage}" class="car-image" loading="lazy">` : ""}
 
-        <div><strong>${car.brand} ${car.model}</strong></div>
-        <div>${car.variant || ""}</div>
-        <div>${car.year} | ${car.fuel} | ${car.km} km</div>
+      <div><strong>${car.brand} ${car.model}</strong></div>
+      <div>${car.variant || ""}</div>
+      <div>${car.year} | ${car.fuel} | ${car.km} km</div>
 
-        <div class="price-status-row">
-          <div class="price">₹ ${formatIndianNumber(car.price)}</div>
-          <div class="status ${statusClass}">${statusText}</div>
-        </div>
+      <div class="price-status-row">
+        <div class="price">₹ ${formatIndianNumber(car.price)}</div>
+        <div class="status ${statusClass}">${statusText}</div>
       </div>
-    `;
-  });
+    </div>
+  `;
+});
 }
 
 // 🔍 DETAILS VIEW
+
 function showDetails(id) {
   const car = carsData.find(c => c.id == id);
+  if (!car) return;
+
   const list = document.getElementById("carList");
 
   let imagesHTML = "";
@@ -148,6 +150,9 @@ function showDetails(id) {
       <p><strong>Mileage:</strong> ${car.km} km</p>
       <p><strong>Owners:</strong> ${car.owner}</p>
       <p><strong>Color:</strong> ${car.color}</p>
+      <p><strong>IDV:</strong> ₹ ${formatIndianNumber(car.idv)}</p>
+      <p><strong>TP Expiry:</strong> ${car.tpExpiry}</p>
+      <p><strong>OD Expiry:</strong> ${car.odExpiry}</p>
 
       <div class="price">₹ ${formatIndianNumber(car.price)}</div>
 
