@@ -149,9 +149,6 @@ function showDetails(id) {
       <p><strong>Mileage:</strong> ${car.km} km</p>
       <p><strong>Owners:</strong> ${car.owner}</p>
       <p><strong>Color:</strong> ${car.color}</p>
-      <p><strong>IDV:</strong> ₹ ${formatIndianNumber(car.idv)}</p>
-      <p><strong>TP Expiry:</strong> ${car.tpExpiry}</p>
-      <p><strong>OD Expiry:</strong> ${car.odExpiry}</p>
 
       <div class="price">₹ ${formatIndianNumber(car.price)}</div>
 
