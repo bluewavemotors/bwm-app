@@ -191,7 +191,20 @@ function applyFilters() {
   const searchValue = document.getElementById("search").value.toLowerCase();
 
   let filtered = carsData.filter(car => {
-    return `${car.brand} ${car.model} ${car.variant}`.toLowerCase().includes(searchValue);
+
+    const searchableText = [
+      car.brand,
+      car.model,
+      car.variant,
+      car.color,
+      car.fuel,
+      car.year
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return searchableText.includes(searchValue);
   });
 
   displayCars(filtered);
