@@ -148,7 +148,7 @@ function showDetails(id) {
       <p><strong>Fuel:</strong> ${car.fuel}</p>
       <p><strong>Mileage:</strong> ${car.km} km</p>
       <p><strong>Owners:</strong> ${car.owner}</p>
-      <p><strong>Color:</strong> ${car.color}</p>
+      <p><strong>Color:</strong> ${car.color || ""}</p>
 
       <div class="price">₹ ${formatIndianNumber(car.price)}</div>
 
