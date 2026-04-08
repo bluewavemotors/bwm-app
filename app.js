@@ -81,43 +81,42 @@ function displayCars(cars) {
     return;
   }
 
-cars.forEach(car => {
+  cars.forEach(car => {
 
-  const firstImage = car.images ? car.images.split(",")[0] : "";
+    const firstImage = car.images ? car.images.split(",")[0] : "";
 
-  let statusClass = "yellow";
-  let statusText = "Yard / Incoming";
+    let statusClass = "yellow";
+    let statusText = "Yard / Incoming";
 
-  if (car.showroom && !car.booked) {
-    statusClass = "green";
-    statusText = "Available";
-  }
+    if (car.showroom && !car.booked) {
+      statusClass = "green";
+      statusText = "Available";
+    }
 
-  if (car.booked) {
-    statusClass = "grey";
-    statusText = "Booked";
-  }
+    if (car.booked) {
+      statusClass = "grey";
+      statusText = "Booked";
+    }
 
-  list.innerHTML += `
-    <div class="car-card" onclick="showDetails('${car.id}')">
+    list.innerHTML += `
+      <div class="car-card" onclick="showDetails('${car.id}')">
 
-      ${firstImage ? `<img src="${firstImage}" class="car-image" loading="lazy">` : ""}
+        ${firstImage ? `<img src="${firstImage}" class="car-image" loading="lazy">` : ""}
 
-      <div><strong>${car.brand} ${car.model}</strong></div>
-      <div>${car.variant || ""}</div>
-      <div>${car.year} | ${car.fuel} | ${car.km} km</div>
+        <div><strong>${car.brand} ${car.model}</strong></div>
+        <div>${car.variant || ""}</div>
+        <div>${car.year} | ${car.fuel} | ${car.km} km</div>
 
-      <div class="price-status-row">
-        <div class="price">₹ ${formatIndianNumber(car.price)}</div>
-        <div class="status ${statusClass}">${statusText}</div>
+        <div class="price-status-row">
+          <div class="price">₹ ${formatIndianNumber(car.price)}</div>
+          <div class="status ${statusClass}">${statusText}</div>
+        </div>
       </div>
-    </div>
-  `;
-});
+    `;
+  });
 }
 
 // 🔍 DETAILS VIEW
-
 function showDetails(id) {
   const car = carsData.find(c => c.id == id);
   if (!car) return;
