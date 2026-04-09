@@ -12,18 +12,40 @@ function formatIndianNumber(price) {
 function parsePrice(price) {
   if (!price) return 0;
 
-  let clean = price.toString().toLowerCase();
+  let text = price.toString().toLowerCase();
 
-  // remove text like "+ 1% TCS"
-  clean = clean.replace(/[^0-9.]/g, " ").trim();
+  // Extract number
+  let number = parseFloat(text.replace(/[^0-9.]/g, ""));
 
-  let number = parseFloat(clean);
+  if (text.includes("crore")) {
+    return number * 10000000;
+  }
 
-  if (price.toString().toLowerCase().includes("lakh")) {
+  if (text.includes("lakh")) {
     return number * 100000;
   }
 
   return number;
+}
+
+function formatPriceShort(price) {
+  const num = parsePrice(price);
+
+  if (!num || isNaN(num)) return price;
+
+  const format = (value) => {
+    return Number(value.toFixed(1)).toString(); // removes .0
+  };
+
+  if (num >= 10000000) {
+    return "₹ " + format(num / 10000000) + " Cr";
+  }
+
+  if (num >= 100000) {
+    return "₹ " + format(num / 100000) + " L";
+  }
+
+  return "₹ " + num.toLocaleString('en-IN');
 }
 
 // 🕒 Date Formatting
@@ -113,7 +135,7 @@ function displayCars(cars) {
         <div>${car.year} | ${car.fuel} | ${car.km} km</div>
 
         <div class="price-status-row">
-          <div class="price">₹ ${formatIndianNumber(car.price)}</div>
+          <div class="price">₹ ${formatPriceShort(car.price)}</div>
           <div class="status ${statusClass}">${statusText}</div>
         </div>
       </div>
@@ -155,7 +177,7 @@ function showDetails(id) {
       <p><strong>Owners:</strong> ${car.owner}</p>
       <p><strong>Color:</strong> ${car.color || ""}</p>
 
-      <div class="price">₹ ${formatIndianNumber(car.price)}</div>
+      <div class="price">₹ ${formatPriceShort(car.price)}</div>
 
       <br>
       <button onclick="shareCar('${car.id}')">📤 Share on WhatsApp</button>
@@ -184,7 +206,7 @@ Year: ${car.year}
 Fuel: ${car.fuel}
 KM: ${car.km}
 
-Price: ₹ ${formatIndianNumber(car.price)}
+Price: ₹ ${formatPriceShort(car.price)}
 
 Available at BWM Thrissur.`;
 
