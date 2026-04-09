@@ -141,7 +141,7 @@ function displayCars(cars) {
         <div>${car.year} | ${car.fuel} | ${car.km} km</div>
 
         <div class="price-status-row">
-          <div class="price">₹ ${formatPriceShort(car.price)}</div>
+          <div class="price"> ${formatPriceShort(car.price)}</div>
           <div class="status ${statusClass}">${statusText}</div>
         </div>
       </div>
@@ -183,7 +183,7 @@ function showDetails(id) {
       <p><strong>Owners:</strong> ${car.owner}</p>
       <p><strong>Color:</strong> ${car.color || ""}</p>
 
-      <div class="price">₹ ${formatPriceShort(car.price)}</div>
+      <div class="price"> ${formatPriceShort(car.price)}</div>
 
       <br>
       <button onclick="shareCar('${car.id}')">📤 Share on WhatsApp</button>
@@ -212,7 +212,7 @@ Year: ${car.year}
 Fuel: ${car.fuel}
 KM: ${car.km}
 
-Price: ₹ ${formatPriceShort(car.price)}
+Price: ${formatPriceShort(car.price)}
 
 Available at BWM Thrissur.`;
 
