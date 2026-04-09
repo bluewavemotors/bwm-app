@@ -25,6 +25,15 @@
       placeholder="Search brand, model, fuel, color..." 
       style="padding-right:35px;"
     >
+
+    <!-- 🔍 QUICK FILTER BUTTONS: 🚗 Diesel  |  ⛽ Petrol  |  💰 Under 20L  |  ⭐ In Showroom -->
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+      <button onclick="quickFilter('diesel')">Diesel</button>
+      <button onclick="quickFilter('petrol')">Petrol</button>
+      <button onclick="quickFilter('under20')">Under 20L</button>
+      <button onclick="quickFilter('showroom')">In Showroom</button>
+      <button onclick="quickFilter('clear')">Clear</button>
+    </div>
     
     <span id="clearBtn" 
       onclick="clearSearch()" 

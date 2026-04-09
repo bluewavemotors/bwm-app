@@ -232,6 +232,33 @@ function applyFilters() {
   displayCars(filtered);
 }
 
+function quickFilter(type) {
+
+  if (type === "diesel") {
+    document.getElementById("search").value = "diesel";
+  }
+
+  if (type === "petrol") {
+    document.getElementById("search").value = "petrol";
+  }
+
+  if (type === "under20") {
+    document.getElementById("budgetFilter").value = "2000000";
+  }
+
+  if (type === "showroom") {
+    document.getElementById("showroomOnly").checked = true;
+  }
+
+  if (type === "clear") {
+    document.getElementById("search").value = "";
+    document.getElementById("budgetFilter").value = "";
+    document.getElementById("showroomOnly").checked = false;
+  }
+
+  applyFilters();
+}
+
 // 🎯 EVENT LISTENERS
 document.getElementById("search").addEventListener("input", applyFilters);
 document.getElementById("showroomOnly").addEventListener("change", applyFilters);
