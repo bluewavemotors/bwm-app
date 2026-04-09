@@ -88,7 +88,7 @@ async function loadCars() {
     loadingDiv.style.display = "block";
     loadingDiv.innerHTML = '<span class="loader"></span> Loading cars...';
 
-    const response = await fetch(API_URL);
+    const response = await fetch(API_URL + "?t=" + new Date().getTime());
     const result = await response.json();
     carsData = result?.cars || [];
 
@@ -162,10 +162,18 @@ function showDetails(id) {
     const imgs = car.images.split(",");
 
     imagesHTML = `
-      <div class="slider">
-        ${imgs.map(img => `
-          <img src="${img}" class="slide" loading="lazy">
-        `).join("")}
+      <div class="slider-container">
+        <div class="slider" id="slider">
+          ${imgs.map(img => `
+            <img src="${img}" class="slide">
+          `).join("")}
+        </div>
+
+        <div class="dots">
+          ${imgs.map((_, i) => `
+            <span class="dot ${i === 0 ? "active" : ""}" onclick="goToSlide(${i})"></span>
+          `).join("")}
+        </div>
       </div>
     `;
   }
@@ -258,6 +266,22 @@ function applyFilters() {
   });
 
   displayCars(filtered);
+}
+
+function goToSlide(index) {
+  const slider = document.getElementById("slider");
+  const slides = document.querySelectorAll(".slide");
+  const dots = document.querySelectorAll(".dot");
+
+  const width = slides[0].clientWidth + 10;
+
+  slider.scrollTo({
+    left: index * width,
+    behavior: "smooth"
+  });
+
+  dots.forEach(d => d.classList.remove("active"));
+  dots[index].classList.add("active");
 }
 
 function quickFilter(type) {

@@ -167,3 +167,26 @@ button {
   object-fit: cover;
   border-radius: 10px;
 }
+
+.slider-container {
+  position: relative;
+}
+
+.dots {
+  text-align: center;
+  margin-top: 5px;
+}
+
+.dot {
+  height: 8px;
+  width: 8px;
+  margin: 0 4px;
+  display: inline-block;
+  background: #ccc;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.dot.active {
+  background: #000;
+}
