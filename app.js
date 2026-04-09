@@ -12,13 +12,18 @@ function formatIndianNumber(price) {
 function parsePrice(price) {
   if (!price) return 0;
 
-  let clean = price.toString().replace(/,/g, '').toLowerCase().trim();
+  let clean = price.toString().toLowerCase();
 
-  if (clean.includes('lakh') || clean.includes('l')) {
-    return parseFloat(clean) * 100000;
+  // remove text like "+ 1% TCS"
+  clean = clean.replace(/[^0-9.]/g, " ").trim();
+
+  let number = parseFloat(clean);
+
+  if (price.toString().toLowerCase().includes("lakh")) {
+    return number * 100000;
   }
 
-  return parseFloat(clean);
+  return number;
 }
 
 // 🕒 Date Formatting
