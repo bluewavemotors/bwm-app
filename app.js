@@ -33,16 +33,12 @@ function formatPriceShort(price) {
 
   if (!num || isNaN(num)) return price;
 
-  const format = (value) => {
-    return Number(value.toFixed(1)).toString(); // removes .0
-  };
-
   if (num >= 10000000) {
-    return "₹ " + format(num / 10000000) + " Cr";
+    return "₹ " + (num / 10000000).toFixed(2) + " Cr";
   }
 
   if (num >= 100000) {
-    return "₹ " + format(num / 100000) + " L";
+    return "₹ " + (num / 100000).toFixed(2) + " L";
   }
 
   return "₹ " + num.toLocaleString('en-IN');
