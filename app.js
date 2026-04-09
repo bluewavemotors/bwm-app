@@ -14,8 +14,12 @@ function parsePrice(price) {
 
   let text = price.toString().toLowerCase();
 
-  // Extract number
-  let number = parseFloat(text.replace(/[^0-9.]/g, ""));
+  // ✅ Extract ONLY first number properly
+  let match = text.match(/[\d.]+/);
+
+  if (!match) return 0;
+
+  let number = parseFloat(match[0]);
 
   if (text.includes("crore")) {
     return number * 10000000;
