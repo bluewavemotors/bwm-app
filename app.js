@@ -194,9 +194,12 @@ Available at BWM Thrissur.`;
 // 🔎 FILTER
 function applyFilters() {
   const searchValue = document.getElementById("search").value.toLowerCase();
+  const showroomOnly = document.getElementById("showroomOnly").checked;
+  const budgetLimit = document.getElementById("budgetFilter").value;
 
   let filtered = carsData.filter(car => {
 
+    // 🔍 SEARCH
     const searchableText = [
       car.brand,
       car.model,
@@ -209,12 +212,30 @@ function applyFilters() {
       .join(" ")
       .toLowerCase();
 
-    return searchableText.includes(searchValue);
+    const matchesSearch = searchableText.includes(searchValue);
+
+    // 🏢 SHOWROOM FILTER
+    const matchesShowroom = showroomOnly
+      ? (car.showroom && !car.booked)
+      : true;
+
+    // 💰 BUDGET FILTER
+    const carPriceNumber = parsePrice(car.price);
+
+    const matchesBudget = budgetLimit
+      ? carPriceNumber <= Number(budgetLimit)
+      : true;
+
+    return matchesSearch && matchesShowroom && matchesBudget;
   });
 
   displayCars(filtered);
 }
 
-// 🚀 INIT
+// 🎯 EVENT LISTENERS
 document.getElementById("search").addEventListener("input", applyFilters);
+document.getElementById("showroomOnly").addEventListener("change", applyFilters);
+document.getElementById("budgetFilter").addEventListener("change", applyFilters);
+
+// 🚀 INIT
 loadCars();
