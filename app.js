@@ -2,6 +2,28 @@ const API_URL =
 "https://script.google.com/macros/s/AKfycbwwE7Vh-aojmNafegOxlHAZhbqbBW9YRZI6LpjE3oAxPb70zRfKvci3CyxfkafGLF75/exec";
 let carsData = [];
 
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  console.log("Install available");
+});
+
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+
+    deferredPrompt.userChoice.then(choice => {
+      if (choice.outcome === 'accepted') {
+        console.log('App installed');
+      }
+      deferredPrompt = null;
+    });
+  }
+}
+
 // 🔢 Price Formatting
 function formatIndianNumber(price) {
   const number = parsePrice(price);
@@ -163,7 +185,7 @@ function showDetails(id) {
 
     imagesHTML = `
       <div class="slider-container">
-        <div class="slider" id="slider">
+        <div class="slider" id="slider-${car.id}">
           ${imgs.map(img => `
             <img src="${img}" class="slide">
           `).join("")}
@@ -171,7 +193,7 @@ function showDetails(id) {
 
         <div class="dots">
           ${imgs.map((_, i) => `
-            <span class="dot ${i === 0 ? "active" : ""}" onclick="goToSlide(${i})"></span>
+            <span class="dot ${i === 0 ? "active" : ""}" onclick="goToSlide(${i}, '${car.id}')"></span>
           `).join("")}
         </div>
       </div>
@@ -199,6 +221,12 @@ function showDetails(id) {
       <button onclick="goBack()">⬅ Back</button>
     </div>
   `;
+}
+
+function clearSearch() {
+  document.getElementById("search").value = "";
+  applyFilters();
+  updateClearButton();
 }
 
 // 🔙 BACK
@@ -268,12 +296,12 @@ function applyFilters() {
   displayCars(filtered);
 }
 
-function goToSlide(index) {
-  const slider = document.getElementById("slider");
-  const slides = document.querySelectorAll(".slide");
-  const dots = document.querySelectorAll(".dot");
+function goToSlide(index, carId) {
+  const slider = document.getElementById("slider-" + carId);
+  const slides = slider.querySelectorAll(".slide");
+  const dots = slider.parentElement.querySelectorAll(".dot");
 
-  const width = slides[0].clientWidth + 10;
+  const width = slides[0].clientWidth;
 
   slider.scrollTo({
     left: index * width,
