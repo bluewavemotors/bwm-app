@@ -175,10 +175,29 @@ function displayCars(cars) {
 // 🔍 DETAILS VIEW
 function showDetails(id) {
   const car = carsData.find(c => c.id == id);
+  if (!car) return;
+
   const list = document.getElementById("carList");
+
+  let imagesHTML = "";
+
+  if (car.images) {
+    const imgs = car.images.split(",");
+
+    imagesHTML = `
+      <div class="slider">
+        ${imgs.map(img => `
+          <img src="${img}" class="slide">
+        `).join("")}
+      </div>
+    `;
+  }
 
   list.innerHTML = `
     <div class="car-detail-card">
+
+      ${imagesHTML}
+
       <h3>${car.brand} ${car.model}</h3>
       <p><strong>Variant:</strong> ${car.variant || "-"}</p>
       <p><strong>Year:</strong> ${car.year}</p>
