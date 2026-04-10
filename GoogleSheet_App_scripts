@@ -1,0 +1,106 @@
+/** BWM-App scripts-------------------------------------<begins>*/
+/** version date 2026-04-10 */
+/** BWM-App main script */
+function doGet(e) {
+
+  const sheet = SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getSheetByName("To-Share"); // Your actual sheet name
+
+  const data = sheet.getDataRange().getValues();
+  const headers = data.shift();
+
+  const map = {
+    "SL NO": "id",
+    "REG NO": "regNo",
+    "BRAND": "brand",
+    "MODEL": "model",
+    "VARIANT": "variant",
+    "PRICE": "price",
+    "COLOR": "color",
+    "YEAR": "year",
+    "FUEL": "fuel",
+    "MILEAGE": "km",
+    "OWNER": "owner",
+    "Ins TP Expiry": "tpExpiry",
+    "Ins OD Expiry": "odExpiry",
+    "IDV": "idv",
+    "In Showroom": "status",
+    "IMAGES": "images"
+  };
+
+  let cars = data.map(row => {
+
+    let obj = {};
+
+    headers.forEach((h, i) => {
+      let key = map[h] || h;
+      obj[key] = row[i];
+    });
+
+    obj.showroom = (obj.status || "").toString().includes("Yes");
+    obj.booked = (obj.status || "").toString().includes("Booked");
+
+    return obj;
+  });
+
+  const lastUpdated = Utilities.base64Encode(
+    Utilities.computeDigest(
+      Utilities.DigestAlgorithm.MD5,
+      JSON.stringify(data)
+    )
+  );
+
+  return ContentService
+    .createTextOutput(JSON.stringify({
+      lastUpdated: lastUpdated,
+      cars: cars
+    }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/** To populate Car image urls in column IMAGES in "Stock" sheet */
+function updateAllCarImages() {
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Stock");
+  const data = sheet.getDataRange().getValues();
+
+  const headers = data[0];
+  const regIndex = headers.indexOf("REG NO");
+  const imgIndex = headers.indexOf("IMAGES");
+
+  const mainFolder = DriveApp.getFolderById("1JpBc422Oz7ywO7j1P_hX3TUyjS0f8rua");
+
+  for (let i = 1; i < data.length; i++) {
+
+    const regNo = data[i][regIndex];
+
+    if (!regNo || regNo.toString().trim() === "") continue;
+
+    const cleanReg = regNo.toString().replace(/\s|-/g, "").toUpperCase();
+
+    if (!cleanReg) continue;
+
+    const folders = mainFolder.getFoldersByName(cleanReg);
+    if (!folders.hasNext()) continue;
+
+    const carFolder = folders.next();
+    const files = carFolder.getFiles();
+
+    let images = [];
+
+    while (files.hasNext()) {
+      const file = files.next();
+      images.push(`https://lh3.googleusercontent.com/d/${file.getId()}=w400`);
+    }
+
+    sheet.getRange(i + 1, imgIndex + 1).setValue(images.join(","));
+  }
+
+  try {
+    SpreadsheetApp.getUi().alert("✅ Images updated successfully!");
+  } catch (e) {
+    Logger.log("✅ Images updated successfully!");
+  }
+}
+/** BWM-App scripts-------------------------------------<end>*/
