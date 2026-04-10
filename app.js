@@ -181,16 +181,21 @@ function showDetails(id) {
 
   let imagesHTML = "";
 
-  if (car.images) {
+  console.log("Images:", car.images); // 🔥 DEBUG
+
+  if (car.images && car.images.trim() !== "") {
+
     const imgs = car.images.split(",");
 
     imagesHTML = `
       <div class="slider">
         ${imgs.map(img => `
-          <img src="${img}" class="slide">
+          <img src="${img.trim()}" class="slide">
         `).join("")}
       </div>
     `;
+  } else {
+    imagesHTML = `<div style="padding:10px;color:red;">No Images Available</div>`;
   }
 
   list.innerHTML = `
@@ -205,9 +210,6 @@ function showDetails(id) {
       <p><strong>Mileage:</strong> ${car.km} km</p>
       <p><strong>Owners:</strong> ${car.owner}</p>
       <p><strong>Color:</strong> ${car.color}</p>
-      <p><strong>IDV:</strong> ₹ ${formatIndianNumber(car.idv)}</p>
-      <p><strong>TP Expiry:</strong> ${car.tpExpiry}</p>
-      <p><strong>OD Expiry:</strong> ${car.odExpiry}</p>
 
       <div class="price">₹ ${formatIndianNumber(car.price)}</div>
 
