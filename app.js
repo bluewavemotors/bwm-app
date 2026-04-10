@@ -235,22 +235,43 @@ function goBack() {
 }
 
 // 📤 SHARE
-function shareCar(id) {
+async function shareCar(id) {
+
   const car = carsData.find(c => c.id == id);
-  const firstImage = car.images ? car.images.split(",")[0] : "";
+
+  const imgs = car.images.split(",");
+
+  // 🔥 selected images logic (for now send first 3)
+  const selectedImgs = imgs.slice(0, 3);
+
+  const payload = {
+    brand: car.brand,
+    model: car.model,
+    variant: car.variant,
+    year: car.year,
+    fuel: car.fuel,
+    km: car.km,
+    price: formatPriceShort(car.price),
+    images: selectedImgs
+  };
+
+  const res = await fetch("https://script.google.com/macros/s/AKfycbwwE7Vh-aojmNafegOxlHAZhbqbBW9YRZI6LpjE3oAxPb70zRfKvci3CyxfkafGLF75/exec", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+
+  const result = await res.json();
+
+  const shareUrl = `${window.location.origin}/share.html?id=${result.id}`;
 
   const message =
 `*${car.brand} ${car.model}*
 
-${firstImage}
-
-Year: ${car.year}
-Fuel: ${car.fuel}
-KM: ${car.km}
+${shareUrl}
 
 Price: ${formatPriceShort(car.price)}
 
-Available at BWM Thrissur.`;
+_BWM Thrissur_`;
 
   window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
 }

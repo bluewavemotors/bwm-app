@@ -103,4 +103,40 @@ function updateAllCarImages() {
     Logger.log("✅ Images updated successfully!");
   }
 }
+
+const FOLDER_ID = "YOUR_DRIVE_FOLDER_ID"; // create a folder
+
+function doPost(e) {
+  const data = JSON.parse(e.postData.contents);
+
+  const id = Utilities.getUuid();
+
+  const expiry = new Date();
+  expiry.setDate(expiry.getDate() + 3); // 🔥 3 days expiry
+
+  data.expiry = expiry;
+
+  const file = DriveApp.getFolderById(FOLDER_ID)
+    .createFile(id + ".json", JSON.stringify(data), MimeType.PLAIN_TEXT);
+
+  return ContentService.createTextOutput(JSON.stringify({
+    id: id
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  const id = e.parameter.id;
+
+  const files = DriveApp.getFolderById(FOLDER_ID).getFilesByName(id + ".json");
+
+  if (!files.hasNext()) {
+    return ContentService.createTextOutput("Not found");
+  }
+
+  const file = files.next();
+  const content = file.getBlob().getDataAsString();
+
+  return ContentService.createTextOutput(content)
+    .setMimeType(ContentService.MimeType.JSON);
+}
 /** BWM-App scripts-------------------------------------<end>*/

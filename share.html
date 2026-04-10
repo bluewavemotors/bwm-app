@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BWM Car Details</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      margin: 0;
+      background: #f2f2f2;
+    }
+
+    .card {
+      background: white;
+      margin: 10px;
+      padding: 12px;
+      border-radius: 10px;
+    }
+
+    .slider {
+      display: flex;
+      overflow-x: auto;
+      gap: 10px;
+    }
+
+    .slide {
+      flex: 0 0 90%;
+      height: 220px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
+    .price {
+      font-weight: bold;
+      font-size: 18px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="content"></div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycbwwE7Vh-aojmNafegOxlHAZhbqbBW9YRZI6LpjE3oAxPb70zRfKvci3CyxfkafGLF75/exec"; // 🔥 replace
+
+async function loadShare() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
+
+  if (!id) {
+    document.body.innerHTML = "❌ Invalid link";
+    return;
+  }
+
+  const res = await fetch(API + "?id=" + id);
+  const data = await res.json();
+
+  // 🔒 expiry check
+  if (new Date() > new Date(data.expiry)) {
+    document.body.innerHTML = "❌ This link has expired";
+    return;
+  }
+
+  document.getElementById("content").innerHTML = `
+    <div class="card">
+
+      <div class="slider">
+        ${data.images.map(img => `<img src="${img}" class="slide">`).join("")}
+      </div>
+
+      <h3>${data.brand} ${data.model}</h3>
+      <p>${data.variant || ""}</p>
+      <p>${data.year} | ${data.fuel} | ${data.km} km</p>
+
+      <div class="price">${data.price}</div>
+
+    </div>
+  `;
+}
+
+loadShare();
+</script>
+
+</body>
+</html>
