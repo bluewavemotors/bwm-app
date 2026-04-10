@@ -112,6 +112,8 @@ html {
 
 button {
   cursor: pointer;
+  position: relative;
+  z-index: 10;
 }
 
 #lastUpdated {

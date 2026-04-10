@@ -244,9 +244,13 @@ function showDetails(id) {
       <div class="price"> ${formatPriceShort(car.price)}</div>
 
       <br>
-      <button onclick="shareCar('${car.id}')">📤 Share on WhatsApp</button>
+      <button onclick="event.stopPropagation(); shareCar('${car.id}')">
+        📤 Share on WhatsApp
+      </button>
       <br><br>
-      <button onclick="goBack()">⬅ Back</button>
+      <button onclick="event.stopPropagation(); goBack()">
+        ⬅ Back
+      </button>
     </div>
   `;
 }
