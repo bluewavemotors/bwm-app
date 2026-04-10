@@ -190,3 +190,8 @@ button {
 .dot.active {
   background: #000;
 }
+
+.selected-img {
+  border: 3px solid #00c853;
+  border-radius: 10px;
+}

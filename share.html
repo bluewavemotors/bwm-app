@@ -45,9 +45,11 @@
 <div id="content"></div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbwwE7Vh-aojmNafegOxlHAZhbqbBW9YRZI6LpjE3oAxPb70zRfKvci3CyxfkafGLF75/exec"; // 🔥 replace
+
+const API = "YOUR_APPS_SCRIPT_WEBAPP_URL"; // 🔥 replace
 
 async function loadShare() {
+
   const params = new URLSearchParams(window.location.search);
   const id = params.get("id");
 
@@ -56,33 +58,44 @@ async function loadShare() {
     return;
   }
 
-  const res = await fetch(API + "?id=" + id);
-  const data = await res.json();
+  try {
+    const res = await fetch(API + "?id=" + id);
+    const data = await res.json();
 
-  // 🔒 expiry check
-  if (new Date() > new Date(data.expiry)) {
-    document.body.innerHTML = "❌ This link has expired";
-    return;
-  }
+    // 🔒 Expiry check
+    if (new Date() > new Date(data.expiry)) {
+      document.body.innerHTML = "❌ This link has expired";
+      return;
+    }
 
-  document.getElementById("content").innerHTML = `
-    <div class="card">
+    // ✅ FIX: handle both array & string
+    const images = Array.isArray(data.images)
+      ? data.images
+      : (data.images ? data.images.split(",") : []);
 
-      <div class="slider">
-        ${data.images.map(img => `<img src="${img}" class="slide">`).join("")}
+    document.getElementById("content").innerHTML = `
+      <div class="card">
+
+        <div class="slider">
+          ${images.map(img => `<img src="${img}" class="slide">`).join("")}
+        </div>
+
+        <h3>${data.brand} ${data.model}</h3>
+        <p>${data.variant || ""}</p>
+        <p>${data.year} | ${data.fuel} | ${data.km} km</p>
+
+        <div class="price">${data.price}</div>
+
       </div>
+    `;
 
-      <h3>${data.brand} ${data.model}</h3>
-      <p>${data.variant || ""}</p>
-      <p>${data.year} | ${data.fuel} | ${data.km} km</p>
-
-      <div class="price">${data.price}</div>
-
-    </div>
-  `;
+  } catch (err) {
+    document.body.innerHTML = "❌ Error loading data";
+  }
 }
 
 loadShare();
+
 </script>
 
 </body>

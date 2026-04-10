@@ -1,6 +1,7 @@
 const API_URL = 
 "https://script.google.com/macros/s/AKfycbwwE7Vh-aojmNafegOxlHAZhbqbBW9YRZI6LpjE3oAxPb70zRfKvci3CyxfkafGLF75/exec";
 let carsData = [];
+let selectedImages = [];
 
 let deferredPrompt;
 
@@ -183,12 +184,39 @@ function showDetails(id) {
   if (car.images) {
     const imgs = car.images.split(",");
 
+    // ✅ Reset + auto select first image
+    selectedImages = [0];
+
     imagesHTML = `
       <div class="slider-container">
         <div class="slider" id="slider-${car.id}">
-          ${imgs.map(img => `
-            <img src="${img}" class="slide">
+          
+          ${imgs.map((img, i) => `
+            <div style="position:relative;">
+              
+              <img 
+                src="${img}" 
+                class="slide ${i === 0 ? 'selected-img' : ''}" 
+                onclick="toggleSelect(${i})"
+                id="img-view-${i}"
+              >
+
+              <input type="checkbox"
+                class="img-check"
+                id="img-${i}"
+                ${i === 0 ? "checked" : ""}
+                style="
+                  position:absolute;
+                  top:10px;
+                  left:10px;
+                  width:20px;
+                  height:20px;
+                "
+              >
+            
+            </div>
           `).join("")}
+
         </div>
 
         <div class="dots">
@@ -234,15 +262,42 @@ function goBack() {
   applyFilters();
 }
 
+function toggleSelect(index) {
+
+  const checkbox = document.getElementById("img-" + index);
+  const image = document.getElementById("img-view-" + index);
+
+  checkbox.checked = !checkbox.checked;
+
+  if (checkbox.checked) {
+    if (!selectedImages.includes(index)) {
+      selectedImages.push(index);
+    }
+    image.classList.add("selected-img");
+  } else {
+    selectedImages = selectedImages.filter(i => i !== index);
+    image.classList.remove("selected-img");
+  }
+}
+
 // 📤 SHARE
 async function shareCar(id) {
 
   const car = carsData.find(c => c.id == id);
+  if (!car) return;
 
-  const imgs = car.images.split(",");
+  const imgs = car.images ? car.images.split(",") : [];
 
-  // 🔥 selected images logic (for now send first 3)
-  const selectedImgs = imgs.slice(0, 3);
+  // ✅ Use selected images if available, else fallback
+  let selectedImgs;
+
+  if (selectedImages && selectedImages.length > 0) {
+    selectedImgs = selectedImages
+      .map(i => imgs[i])
+      .filter(Boolean); // remove undefined safety
+  } else {
+    selectedImgs = imgs.slice(0, 3);
+  }
 
   const payload = {
     brand: car.brand,
@@ -252,10 +307,10 @@ async function shareCar(id) {
     fuel: car.fuel,
     km: car.km,
     price: formatPriceShort(car.price),
-    images: selectedImgs
+    images: selectedImgs // ✅ ALWAYS ARRAY
   };
 
-  const res = await fetch("https://script.google.com/macros/s/AKfycbwwE7Vh-aojmNafegOxlHAZhbqbBW9YRZI6LpjE3oAxPb70zRfKvci3CyxfkafGLF75/exec", {
+  const res = await fetch("YOUR_APPS_SCRIPT_WEBAPP_URL", {
     method: "POST",
     body: JSON.stringify(payload)
   });
@@ -271,7 +326,9 @@ ${shareUrl}
 
 Price: ${formatPriceShort(car.price)}
 
-_BWM Thrissur_`;
+_⚠️ Open once with internet. Then works offline._
+
+_Blue Wave Motors, Thrissur_`;
 
   window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
 }
