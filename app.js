@@ -175,79 +175,30 @@ function displayCars(cars) {
 // 🔍 DETAILS VIEW
 function showDetails(id) {
   const car = carsData.find(c => c.id == id);
-  if (!car) return;
-
   const list = document.getElementById("carList");
 
-  let imagesHTML = "";
-
-  if (car.images) {
-    const imgs = car.images.split(",");
-
-    // ✅ Reset + auto select first image
-    selectedImages = [0];
-
-    imagesHTML = `
-      <div class="slider-container">
-        <div class="slider" id="slider-${car.id}">
-          
-          ${imgs.map((img, i) => `
-            <div style="position:relative;">
-              
-              <img 
-                src="${img}" 
-                class="slide ${i === 0 ? 'selected-img' : ''}" 
-                onclick="toggleSelect(${i})"
-                id="img-view-${i}"
-              >
-
-              <input type="checkbox"
-                class="img-check"
-                id="img-${i}"
-                ${i === 0 ? "checked" : ""}
-                style="
-                  position:absolute;
-                  top:10px;
-                  left:10px;
-                  width:20px;
-                  height:20px;
-                "
-              >
-            
-            </div>
-          `).join("")}
-
-        </div>
-
-        <div class="dots">
-          ${imgs.map((_, i) => `
-            <span class="dot ${i === 0 ? "active" : ""}" onclick="goToSlide(${i}, '${car.id}')"></span>
-          `).join("")}
-        </div>
-      </div>
-    `;
-  }
-
   list.innerHTML = `
-    <div class="car-card">
-
-      ${imagesHTML}
-
+    <div class="car-detail-card">
       <h3>${car.brand} ${car.model}</h3>
       <p><strong>Variant:</strong> ${car.variant || "-"}</p>
       <p><strong>Year:</strong> ${car.year}</p>
       <p><strong>Fuel:</strong> ${car.fuel}</p>
       <p><strong>Mileage:</strong> ${car.km} km</p>
       <p><strong>Owners:</strong> ${car.owner}</p>
-      <p><strong>Color:</strong> ${car.color || ""}</p>
+      <p><strong>Color:</strong> ${car.color}</p>
+      <p><strong>IDV:</strong> ₹ ${formatIndianNumber(car.idv)}</p>
+      <p><strong>TP Expiry:</strong> ${car.tpExpiry}</p>
+      <p><strong>OD Expiry:</strong> ${car.odExpiry}</p>
 
-      <div class="price"> ${formatPriceShort(car.price)}</div>
+      <div class="price">₹ ${formatIndianNumber(car.price)}</div>
 
       <br>
-      <button onclick="event.stopPropagation(); shareCar('${car.id}')">
+      <button onclick="event.stopPropagation(); shareCar(${car.id})">
         📤 Share on WhatsApp
       </button>
+
       <br><br>
+
       <button onclick="event.stopPropagation(); goBack()">
         ⬅ Back
       </button>
