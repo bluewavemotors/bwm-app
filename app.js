@@ -181,19 +181,28 @@ function showDetails(id) {
 
   let imagesHTML = "";
 
-  console.log("Images:", car.images); // 🔥 DEBUG
-
   if (car.images && car.images.trim() !== "") {
 
-    const imgs = car.images.split(",");
+    const imgs = car.images
+      .split(",")
+      .map(i => i.trim())
+      .filter(i => i.startsWith("http")); // ✅ IMPORTANT
 
-    imagesHTML = `
-      <div class="slider">
-        ${imgs.map(img => `
-          <img src="${img.trim()}" class="slide">
-        `).join("")}
-      </div>
-    `;
+    if (imgs.length > 0) {
+
+      imagesHTML = `
+        <div class="slider">
+          ${imgs.map(img => `
+            <img src="${img}" class="slide" loading="lazy"
+              onerror="this.style.display='none'">
+          `).join("")}
+        </div>
+      `;
+
+    } else {
+      imagesHTML = `<div style="padding:10px;color:red;">No Valid Images</div>`;
+    }
+
   } else {
     imagesHTML = `<div style="padding:10px;color:red;">No Images Available</div>`;
   }
