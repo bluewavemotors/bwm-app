@@ -455,6 +455,9 @@ async function shareCar(id) {
   try {
     const response = await fetch(API_URL, {
       method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
       body: JSON.stringify({
         action: "createShare",
         car: car,
@@ -462,21 +465,11 @@ async function shareCar(id) {
       })
     });
 
-    const text = await response.text();
-    console.log("RAW RESPONSE:", text);
+    const result = await response.json();
 
-    let result;
-    try {
-      result = JSON.parse(text);
-    } catch (e) {
-      alert("❌ Server not returning JSON");
-      console.log(text);
-      return;
-    }
-
-    if (!result.shareId) {
+    if (!result || !result.shareId) {
       alert("❌ Share failed");
-      console.log(result);
+      console.log("Result:", result);
       return;
     }
 
@@ -494,7 +487,7 @@ _Blue Wave Motors_`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
 
   } catch (err) {
-    alert("❌ Network error");
+    alert("❌ Network Error");
     console.error(err);
   }
 }
