@@ -123,7 +123,6 @@ function updateClearButton() {
 
 // ─── LOAD CARS ────────────────────────────────────────────────────────────────
 async function loadCars() {
-  localStorage.setItem("carsCache", JSON.stringify(carsData));
   const loadingDiv = document.getElementById("loading");
   const lastUpdatedDiv = document.getElementById("lastUpdated");
 
@@ -133,7 +132,11 @@ async function loadCars() {
 
     const response = await fetch(API_URL + "?t=" + new Date().getTime());
     const result = await response.json();
+
     carsData = (result?.cars || []).map(sanitizeCar);
+
+    // ✅ CACHE AFTER LOAD
+    localStorage.setItem("carsCache", JSON.stringify(carsData));
 
     loadingDiv.style.display = "none";
 
@@ -475,7 +478,6 @@ _Blue Wave Motors, Thrissur_`;
 
   } catch (err) {
     alert("❌ Share failed");
-    console.error(err);
   }
 }
 
@@ -584,8 +586,4 @@ document.getElementById("showroomOnly").addEventListener("change", applyFilters)
 document.getElementById("budgetFilter").addEventListener("change", applyFilters);
 
 // 🚀 INIT
-try {
-  loadCars();
-} catch (error) {
-  showError("❌ Failed to load cars", loadCars);
-}
+loadCars();
