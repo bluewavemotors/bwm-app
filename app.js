@@ -1,16 +1,80 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbwwE7Vh-aojmNafegOxlHAZhbqbBW9YRZI6LpjE3oAxPb70zRfKvci3CyxfkafGLF75/exec";
-
+const API_URL = 
+"https://script.google.com/macros/s/AKfycbwwE7Vh-aojmNafegOxlHAZhbqbBW9YRZI6LpjE3oAxPb70zRfKvci3CyxfkafGLF75/exec";
 let carsData = [];
-let imageSelectionState = {}; // { carId: Set<imageIndex> }
+let selectedImages = [];
 
-// ─── PRICE ────────────────────────────────────────────────────────────────────
-// Handles: plain numbers, "29.75 lakh", "29.75 l", "1.15 crore", "1.15 cr"
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  console.log("Install available");
+});
+
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+
+    deferredPrompt.userChoice.then(choice => {
+      if (choice.outcome === 'accepted') {
+        console.log('App installed');
+      }
+      deferredPrompt = null;
+    });
+  }
+}
+
+// 🔢 Price Formatting
+function formatIndianNumber(price) {
+  const number = parsePrice(price);
+  if (!number || isNaN(number)) return price;
+  return number.toLocaleString('en-IN');
+}
+
 function parsePrice(price) {
   if (!price) return 0;
-  const clean = price.toString().replace(/,/g, '').toLowerCase().trim();
-  if (clean.includes('crore') || clean.includes('cr')) return parseFloat(clean) * 10000000;
-  if (clean.includes('lakh')  || clean.includes('l'))  return parseFloat(clean) * 100000;
-  return parseFloat(clean) || 0;
+
+  let text = price.toString().toLowerCase();
+
+  // ✅ Extract ONLY first number properly
+  let match = text.match(/[\d.]+/);
+
+  if (!match) return 0;
+
+  let number = parseFloat(match[0]);
+
+  if (text.includes("crore")) {
+    return number * 10000000;
+  }
+
+  if (text.includes("lakh")) {
+    return number * 100000;
+  }
+
+  return number;
+}
+
+function formatPriceShort(price) {
+  const num = parsePrice(price);
+
+  if (!num || isNaN(num)) return price;
+
+  const round2 = (value) => {
+    return Math.round(value * 100) / 100;
+  };
+
+  if (num >= 10000000) {
+    const value = round2(num / 10000000);
+    return "₹ " + value.toFixed(2) + " Cr";
+  }
+
+  if (num >= 100000) {
+    const value = round2(num / 100000);
+    return "₹ " + value.toFixed(2) + " L";
+  }
+
+  return "₹ " + num.toLocaleString('en-IN');
 }
 
 // Displays: ₹ 29.75 L  /  ₹ 1.15 Cr  /  ₹ 85,000
@@ -28,145 +92,46 @@ function formatDateTime(date) {
   const d = new Date(date);
   const day   = String(d.getDate()).padStart(2, '0');
   const month = months[d.getMonth()];
-  const year  = d.getFullYear();
-  let hours   = d.getHours();
-  const mins  = String(d.getMinutes()).padStart(2, '0');
-  const secs  = String(d.getSeconds()).padStart(2, '0');
-  const ampm  = hours >= 12 ? 'PM' : 'AM';
+  const year = d.getFullYear();
+
+  let hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+
+  const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12 || 12;
-  return `${day}-${month}-${year} ${String(hours).padStart(2,'0')}:${mins}:${secs} ${ampm}`;
+
+  return `${day}-${month}-${year} ${hours}:${minutes} ${ampm}`;
 }
 
 // ─── CLEAR BUTTON ─────────────────────────────────────────────────────────────
 function updateClearButton() {
-  document.getElementById("clearBtn").style.display =
-    document.getElementById("search").value.trim() ? "block" : "none";
-}
-
-// ─── GOOGLE DRIVE IMAGES ──────────────────────────────────────────────────────
-// Expects car.images = comma-separated Google Drive file IDs
-// Drive files must be shared as "Anyone with the link can view"
-function parseDriveImages(imagesField) {
-  if (!imagesField) return [];
-  return imagesField.toString().split(',')
-    .map(id => id.trim())
-    .filter(Boolean)
-    .map(id => `https://drive.google.com/thumbnail?id=${id}&sz=w600`);
-}
-
-// ─── IMAGE SLIDER ─────────────────────────────────────────────────────────────
-function buildImageSlider(images, carId) {
-  if (!images.length) {
-    return '<div class="no-image">No images available</div>';
-  }
-
-  const imgHtml = images.map((url, i) => `
-    <div class="img-wrap" id="imgwrap-${carId}-${i}" onclick="toggleImageSelect('${carId}', ${i})">
-      <img src="${url}" loading="lazy"
-        onerror="this.closest('.img-wrap').style.display='none'"
-        alt="Car photo ${i + 1}">
-      <div class="img-check" id="imgcheck-${carId}-${i}"></div>
-    </div>
-  `).join('');
-
-  return `
-    <div class="image-slider">${imgHtml}</div>
-    <div class="img-hint">Tap images to select for sharing</div>
-  `;
-}
-
-function toggleImageSelect(carId, index) {
-  if (!imageSelectionState[carId]) imageSelectionState[carId] = new Set();
-  const set = imageSelectionState[carId];
-  set.has(index) ? set.delete(index) : set.add(index);
-
-  const check = document.getElementById(`imgcheck-${carId}-${index}`);
-  const wrap  = document.getElementById(`imgwrap-${carId}-${index}`);
-  if (check) check.classList.toggle('selected', set.has(index));
-  if (wrap)  wrap.classList.toggle('img-selected', set.has(index));
+  const searchInput = document.getElementById("search");
+  const clearBtn = document.getElementById("clearBtn");
+  clearBtn.style.display = searchInput.value.trim() ? "block" : "none";
 }
 
 // ─── LOAD CARS ────────────────────────────────────────────────────────────────
 async function loadCars() {
-  const loadingDiv     = document.getElementById("loading");
+  const loadingDiv = document.getElementById("loading");
   const lastUpdatedDiv = document.getElementById("lastUpdated");
-
-  // Restore saved filter state
-  const savedFilters = JSON.parse(localStorage.getItem("bwm_filters") || "{}");
-  document.getElementById("search").value         = savedFilters.search       || "";
-  document.getElementById("showroomOnly").checked  = savedFilters.showroomOnly || false;
-  document.getElementById("budgetFilter").value    = savedFilters.budget       || "";
-  updateClearButton();
-
-  // ✅ Handle snapshot share link: ?share=SHARE_ID
-  const params  = new URLSearchParams(window.location.search);
-  const shareId = params.get('share');
-  if (shareId) {
-    await loadSharedCar(shareId);
-    return;
-  }
 
   try {
     loadingDiv.style.display = "block";
     loadingDiv.innerHTML = '<span class="loader"></span> Loading cars...';
 
-    // ✅ Cache busting — always fetches fresh data
-    const response = await fetch(API_URL + '?t=' + Date.now());
-    if (!response.ok) throw new Error("API error");
-
+    const response = await fetch(API_URL + "?t=" + new Date().getTime());
     const result = await response.json();
-    let serverVersion, cars;
+    carsData = result?.cars || [];
 
-    if (Array.isArray(result)) {
-      cars = result; serverVersion = "old";
-    } else {
-      cars = result.cars || []; serverVersion = result.lastUpdated;
-    }
-
-    const storedVersion = localStorage.getItem("bwm_version");
-    if (storedVersion === serverVersion) {
-      const cached = localStorage.getItem("bwm_cars");
-      if (cached) {
-        carsData = JSON.parse(cached);
-        loadingDiv.style.display = "none";
-        const storedDate = localStorage.getItem("bwm_last_updated");
-        lastUpdatedDiv.innerText = storedDate ? "Last updated: " + formatDateTime(storedDate) : "";
-        checkCarParam();
-        return;
-      }
-    }
-
-    carsData = cars.filter(car => car.brand && car.model);
-    localStorage.setItem("bwm_cars",        JSON.stringify(carsData));
-    localStorage.setItem("bwm_version",     serverVersion);
-    const nowISO = new Date().toISOString();
-    localStorage.setItem("bwm_last_updated", nowISO);
     loadingDiv.style.display = "none";
-    lastUpdatedDiv.innerText = "Last updated: " + formatDateTime(nowISO);
-    checkCarParam();
+
+    lastUpdatedDiv.innerText =
+      "Last updated: " + formatDateTime(new Date().toISOString());
+
+    applyFilters();
 
   } catch (error) {
-    console.error(error);
-    const cached     = localStorage.getItem("bwm_cars");
-    const storedDate = localStorage.getItem("bwm_last_updated");
-
-    if (cached) {
-      carsData = JSON.parse(cached);
-      loadingDiv.innerHTML = `
-        ⚠️ Offline Mode<br>
-        <small>Showing last saved data</small><br><br>
-        <button onclick="loadCars()">🔄 Retry</button>
-      `;
-      lastUpdatedDiv.innerText = storedDate ? "Last updated: " + formatDateTime(storedDate) : "";
-      checkCarParam();
-    } else {
-      loadingDiv.innerHTML = `
-        ❌ No data available<br>
-        <small>Please connect to internet</small><br><br>
-        <button onclick="loadCars()">🔄 Retry</button>
-      `;
-      lastUpdatedDiv.innerText = "";
-    }
+    loadingDiv.innerHTML = "❌ Error loading data";
   }
 }
 
@@ -256,25 +221,33 @@ function displayCars(cars) {
   }
 
   cars.forEach(car => {
-    let statusClass = "yellow", statusText = "Yard / Incoming";
-    if (car.showroom && !car.booked) { statusClass = "green"; statusText = "Available"; }
-    if (car.booked)                  { statusClass = "grey";  statusText = "Booked"; }
 
-    // Show first image as thumbnail on list card
-    const images   = parseDriveImages(car.images);
-    const thumbHtml = images.length
-      ? `<img class="card-thumb" src="${images[0]}" loading="lazy"
-           onerror="this.style.display='none'" alt="${car.brand} ${car.model}">`
-      : '';
+    const firstImage = car.images ? car.images.split(",")[0] : "";
+
+    let statusClass = "yellow";
+    let statusText = "Yard / Incoming";
+
+    if (car.showroom && !car.booked) {
+      statusClass = "green";
+      statusText = "Available";
+    }
+
+    if (car.booked) {
+      statusClass = "grey";
+      statusText = "Booked";
+    }
 
     list.innerHTML += `
-      <div class="car-card" onclick="showDetails(${car.id})">
-        ${thumbHtml}
+      <div class="car-card" onclick="showDetails('${car.id}')">
+
+        ${firstImage ? `<img src="${firstImage}" class="car-image" loading="lazy">` : ""}
+
         <div><strong>${car.brand} ${car.model}</strong></div>
         <div>${car.variant || ""}</div>
         <div>${car.year} | ${car.fuel} | ${car.km} km</div>
+
         <div class="price-status-row">
-          <div class="price">${formatPrice(car.price)}</div>
+          <div class="price"> ${formatPriceShort(car.price)}</div>
           <div class="status ${statusClass}">${statusText}</div>
         </div>
       </div>
@@ -284,16 +257,44 @@ function displayCars(cars) {
 
 // ─── DETAIL VIEW ──────────────────────────────────────────────────────────────
 function showDetails(id) {
-  const car    = carsData.find(c => c.id == id);
-  const list   = document.getElementById("carList");
-  const images = parseDriveImages(car.images);
+  const car = carsData.find(c => c.id == id);
+  if (!car) return;
 
-  // Reset image selection for this car
-  imageSelectionState[car.id] = new Set();
+  const list = document.getElementById("carList");
+
+  let imagesHTML = "";
+
+  if (car.images && car.images.trim() !== "") {
+
+    const imgs = car.images
+      .split(",")
+      .map(i => i.trim())
+      .filter(i => i.startsWith("http")); // ✅ IMPORTANT
+
+    if (imgs.length > 0) {
+
+      imagesHTML = `
+        <div class="slider">
+          ${imgs.map(img => `
+            <img src="${img}" class="slide" loading="lazy"
+              onerror="this.style.display='none'">
+          `).join("")}
+        </div>
+      `;
+
+    } else {
+      imagesHTML = `<div style="padding:10px;color:red;">No Valid Images</div>`;
+    }
+
+  } else {
+    imagesHTML = `<div style="padding:10px;color:red;">No Images Available</div>`;
+  }
 
   list.innerHTML = `
-    <div class="car-card">
-      ${buildImageSlider(images, car.id)}
+    <div class="car-detail-card">
+
+      ${imagesHTML}
+
       <h3>${car.brand} ${car.model}</h3>
       <p><strong>Variant:</strong> ${car.variant || "-"}</p>
       <p><strong>Year:</strong> ${car.year}</p>
@@ -301,65 +302,101 @@ function showDetails(id) {
       <p><strong>Mileage:</strong> ${car.km} km</p>
       <p><strong>Owners:</strong> ${car.owner}</p>
       <p><strong>Color:</strong> ${car.color}</p>
-      <p><strong>IDV:</strong> ${formatPrice(car.idv)}</p>
-      <p><strong>TP Expiry:</strong> ${car.tpExpiry}</p>
-      <p><strong>OD Expiry:</strong> ${car.odExpiry}</p>
-      <div class="price">${formatPrice(car.price)}</div>
+
+      <div class="price">₹ ${formatIndianNumber(car.price)}</div>
+
       <br>
-      <button onclick="shareCar(${car.id})">📤 Share on WhatsApp</button>
+      <button onclick="event.stopPropagation(); shareCar(${car.id})">
+        📤 Share on WhatsApp
+      </button>
+
       <br><br>
-      <button onclick="goBack()">⬅ Back</button>
+
+      <button onclick="event.stopPropagation(); goBack()">
+        ⬅ Back
+      </button>
     </div>
   `;
 }
 
-// ─── BACK ─────────────────────────────────────────────────────────────────────
-function goBack() { applyFilters(); }
+function clearSearch() {
+  document.getElementById("search").value = "";
+  applyFilters();
+  updateClearButton();
+}
 
-// ─── SHARE ────────────────────────────────────────────────────────────────────
-async function shareCar(id) {
-  const car    = carsData.find(c => c.id == id);
-  const images = parseDriveImages(car.images);
+// 🔙 BACK
+function goBack() {
+  applyFilters();
+}
 
-  // ✅ Controlled image sharing: use selected images, fallback to all
-  const selectedSet  = imageSelectionState[car.id] || new Set();
-  const shareImages  = selectedSet.size > 0
-    ? [...selectedSet].map(i => images[i])
-    : images;
+function toggleSelect(index) {
 
-  // ✅ Snapshot-based share — create server snapshot, get expiring link
-  let shareUrl = '';
-  try {
-    const shareId = await createShareSnapshot(car, shareImages);
-    if (shareId) {
-      shareUrl = window.location.origin + window.location.pathname + '?share=' + shareId;
+  const checkbox = document.getElementById("img-" + index);
+  const image = document.getElementById("img-view-" + index);
+
+  checkbox.checked = !checkbox.checked;
+
+  if (checkbox.checked) {
+    if (!selectedImages.includes(index)) {
+      selectedImages.push(index);
     }
-  } catch (e) {
-    // Fallback: simple car ID link (live data, no expiry)
-    shareUrl = window.location.origin + window.location.pathname + '?car=' + car.id;
+    image.classList.add("selected-img");
+  } else {
+    selectedImages = selectedImages.filter(i => i !== index);
+    image.classList.remove("selected-img");
+  }
+}
+
+// 📤 SHARE
+async function shareCar(id) {
+
+  const car = carsData.find(c => c.id == id);
+  if (!car) return;
+
+  const imgs = car.images ? car.images.split(",") : [];
+
+  // ✅ Use selected images if available, else fallback
+  let selectedImgs;
+
+  if (selectedImages && selectedImages.length > 0) {
+    selectedImgs = selectedImages
+      .map(i => imgs[i])
+      .filter(Boolean); // remove undefined safety
+  } else {
+    selectedImgs = imgs.slice(0, 3);
   }
 
-  const imageSection = shareImages.length
-    ? '\n\nImages:\n' + shareImages.join('\n')
-    : '';
+  const payload = {
+    brand: car.brand,
+    model: car.model,
+    variant: car.variant,
+    year: car.year,
+    fuel: car.fuel,
+    km: car.km,
+    price: formatPriceShort(car.price),
+    images: selectedImgs // ✅ ALWAYS ARRAY
+  };
 
-  const linkSection = shareUrl
-    ? '\n\nView details: ' + shareUrl
-    : '';
+  const res = await fetch("YOUR_APPS_SCRIPT_WEBAPP_URL", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+
+  const result = await res.json();
+
+  const shareUrl = `${window.location.origin}/share.html?id=${result.id}`;
 
   const message =
-`*${car.brand} ${car.model} ${car.variant || ""}*
+`*${car.brand} ${car.model}*
 
-Year: ${car.year}
-Fuel: ${car.fuel}
-Mileage: ${car.km} km
-Owners: ${car.owner}
-Color: ${car.color}
+${shareUrl}
 
-Price: ${formatPrice(car.price)}${imageSection}${linkSection}
+Price: ${formatPriceShort(car.price)}
 
-Available at BWM Thrissur.
-Would you like to schedule a visit?`;
+_⚠️ Open once with internet. Then works offline._
+
+_Blue Wave Motors, Thrissur_`;
 
   window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
 }
@@ -377,63 +414,92 @@ async function createShareSnapshot(car, images) {
 
 // ─── FILTERS ──────────────────────────────────────────────────────────────────
 function applyFilters() {
-  const searchValue  = document.getElementById("search").value.toLowerCase();
+  const searchValue = document.getElementById("search").value.toLowerCase();
   const showroomOnly = document.getElementById("showroomOnly").checked;
   const budgetLimit  = document.getElementById("budgetFilter").value;
 
-  const filtered = carsData.filter(car => {
-    const text = `${car.brand} ${car.model} ${car.variant} ${car.color} ${car.fuel} ${car.year}`;
-    const matchesSearch   = text.toLowerCase().includes(searchValue);
-    const matchesShowroom = showroomOnly ? (car.showroom && !car.booked) : true;
-    const matchesBudget   = budgetLimit  ? parsePrice(car.price) <= Number(budgetLimit) : true;
+  let filtered = carsData.filter(car => {
+
+    // 🔍 SEARCH
+    const searchableText = [
+      car.brand,
+      car.model,
+      car.variant,
+      car.color,
+      car.fuel,
+      car.year
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    const matchesSearch = searchableText.includes(searchValue);
+
+    // 🏢 SHOWROOM FILTER
+    const matchesShowroom = showroomOnly
+      ? (car.showroom && !car.booked)
+      : true;
+
+    // 💰 BUDGET FILTER
+    const carPriceNumber = parsePrice(car.price);
+
+    const matchesBudget = budgetLimit
+      ? carPriceNumber <= Number(budgetLimit)
+      : true;
+
     return matchesSearch && matchesShowroom && matchesBudget;
   });
 
   displayCars(filtered);
-
-  localStorage.setItem("bwm_filters", JSON.stringify({
-    search:       document.getElementById("search").value,
-    showroomOnly: document.getElementById("showroomOnly").checked,
-    budget:       document.getElementById("budgetFilter").value,
-  }));
 }
 
-// ✅ QUICK FILTERS — programmatic one-tap filter shortcuts
+function goToSlide(index, carId) {
+  const slider = document.getElementById("slider-" + carId);
+  const slides = slider.querySelectorAll(".slide");
+  const dots = slider.parentElement.querySelectorAll(".dot");
+
+  const width = slides[0].clientWidth;
+
+  slider.scrollTo({
+    left: index * width,
+    behavior: "smooth"
+  });
+
+  dots.forEach(d => d.classList.remove("active"));
+  dots[index].classList.add("active");
+}
+
 function quickFilter(type) {
-  // Reset everything first
-  document.getElementById("search").value         = "";
-  document.getElementById("showroomOnly").checked  = false;
-  document.getElementById("budgetFilter").value    = "";
 
-  if (type === 'diesel')   document.getElementById("search").value        = "diesel";
-  if (type === 'petrol')   document.getElementById("search").value        = "petrol";
-  if (type === 'under20')  document.getElementById("budgetFilter").value  = "2000000";
-  if (type === 'showroom') document.getElementById("showroomOnly").checked = true;
-  // 'clear' — already reset above
+  if (type === "diesel") {
+    document.getElementById("search").value = "diesel";
+  }
+
+  if (type === "petrol") {
+    document.getElementById("search").value = "petrol";
+  }
+
+  if (type === "under20") {
+    document.getElementById("budgetFilter").value = "2000000";
+  }
+
+  if (type === "showroom") {
+    document.getElementById("showroomOnly").checked = true;
+  }
+
+  if (type === "clear") {
+    document.getElementById("search").value = "";
+    document.getElementById("budgetFilter").value = "";
+    document.getElementById("showroomOnly").checked = false;
+  }
 
   applyFilters();
-  updateClearButton();
 }
 
-// ─── EVENTS ───────────────────────────────────────────────────────────────────
-document.getElementById("search").addEventListener("input", function () {
-  applyFilters();
-  updateClearButton();
-});
+// 🎯 EVENT LISTENERS
+document.getElementById("search").addEventListener("input", applyFilters);
 document.getElementById("showroomOnly").addEventListener("change", applyFilters);
 document.getElementById("budgetFilter").addEventListener("change", applyFilters);
 
-// ─── CLEAR SEARCH ─────────────────────────────────────────────────────────────
-function clearSearch() {
-  document.getElementById("search").value = "";
-  applyFilters();
-  updateClearButton();
-}
-
-// ─── INIT ─────────────────────────────────────────────────────────────────────
+// 🚀 INIT
 loadCars();
-
-const storedDate = localStorage.getItem("bwm_last_updated");
-if (storedDate) {
-  document.getElementById("lastUpdated").innerText = "Last updated: " + formatDateTime(storedDate);
-}

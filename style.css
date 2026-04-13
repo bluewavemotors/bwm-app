@@ -114,13 +114,15 @@ html {
 
 button {
   cursor: pointer;
+  position: relative;
+  z-index: 10;
 }
 
 #lastUpdated {
   text-align: center;
   font-size: 12px;
-  color: #000000;
-  font-weight: 500;
+  color: #000000;   /* pure black */
+  font-weight: 500; /* slight bold for clarity */
   margin-top: 5px;
 }
 
@@ -278,4 +280,64 @@ button {
   padding: 3px 10px;
   border-radius: 12px;
   margin-bottom: 10px;
+}
+
+/* 🔥 IMAGE STYLES (ONLY ONCE) */
+.car-image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.slider {
+  display: flex;
+  overflow-x: auto;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.slide {
+  flex: 0 0 90%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.slider-container {
+  position: relative;
+}
+
+.dots {
+  text-align: center;
+  margin-top: 5px;
+}
+
+.dot {
+  height: 8px;
+  width: 8px;
+  margin: 0 4px;
+  display: inline-block;
+  background: #ccc;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.dot.active {
+  background: #000;
+}
+
+.selected-img {
+  border: 3px solid #00c853;
+  border-radius: 10px;
+}
+
+.car-detail-card {
+  background: white;
+  margin: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  cursor: default; /* 🔥 KEY FIX */
 }
