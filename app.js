@@ -586,6 +586,7 @@ window.addEventListener("DOMContentLoaded", function () {
   document.getElementById("search").addEventListener("input", applyFilters);
   document.getElementById("showroomOnly").addEventListener("change", applyFilters);
   document.getElementById("budgetFilter").addEventListener("change", applyFilters);
+  document.getElementById("sortFilter").addEventListener("change", applyFilters); // ✅ ADD THIS
 
   loadCars();
 
