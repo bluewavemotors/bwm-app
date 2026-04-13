@@ -581,9 +581,12 @@ function quickFilter(type) {
 }
 
 // 🎯 EVENT LISTENERS
-document.getElementById("search").addEventListener("input", applyFilters);
-document.getElementById("showroomOnly").addEventListener("change", applyFilters);
-document.getElementById("budgetFilter").addEventListener("change", applyFilters);
+window.addEventListener("DOMContentLoaded", function () {
 
-// 🚀 INIT
-loadCars();
+  document.getElementById("search").addEventListener("input", applyFilters);
+  document.getElementById("showroomOnly").addEventListener("change", applyFilters);
+  document.getElementById("budgetFilter").addEventListener("change", applyFilters);
+
+  loadCars();
+
+});
