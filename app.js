@@ -446,26 +446,55 @@ async function shareCar(id) {
   const car = carsData.find(c => c.id == id);
   if (!car) return;
 
+  const imgs = car.images ? car.images.split(",") : [];
+
+  let selectedImgs = selectedImages.length > 0
+    ? selectedImages.map(i => imgs[i]).filter(Boolean)
+    : imgs.slice(0, 3);
+
   try {
     const response = await fetch(API_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
       body: JSON.stringify({
         action: "createShare",
         car: car,
-        images: []
+        images: selectedImgs
       })
     });
 
     const text = await response.text();
+    console.log("RAW RESPONSE:", text);
 
-    alert(text);   // 👈 IMPORTANT (see actual response)
-    console.log(text);
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch (e) {
+      alert("❌ Server not returning JSON");
+      console.log(text);
+      return;
+    }
+
+    if (!result.shareId) {
+      alert("❌ Share failed");
+      console.log(result);
+      return;
+    }
+
+    const shareUrl = `${window.location.origin}/share.html?id=${result.shareId}`;
+
+    const message =
+`*${car.brand} ${car.model}*
+
+${shareUrl}
+
+Price: ${formatPriceShort(car.price)}
+
+_Blue Wave Motors_`;
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
 
   } catch (err) {
-    alert("❌ Network Error");
+    alert("❌ Network error");
     console.error(err);
   }
 }
