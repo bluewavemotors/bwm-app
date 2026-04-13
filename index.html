@@ -11,7 +11,7 @@
 <body>
 
 <div class="header">
-  
+
   <div class="header-top">
     <img src="logo.png" class="logo">
     <h2>BWM Inventory</h2>
@@ -19,15 +19,14 @@
 
   <!-- 🔍 Search with Clear Button -->
   <div style="position:relative;">
-    <input 
-      type="text" 
-      id="search" 
-      placeholder="Search brand, model, fuel, color..." 
+    <input
+      type="text"
+      id="search"
+      placeholder="Search brand, model, fuel, color..."
       style="padding-right:35px;"
     >
-    
-    <span id="clearBtn" 
-      onclick="clearSearch()" 
+    <span id="clearBtn"
+      onclick="clearSearch()"
       style="
         position:absolute;
         right:10px;
@@ -38,12 +37,19 @@
         color:#888;
         display:none;
       "
-    >
-      ✖
-    </span>
+    >✖</span>
   </div>
 
-  <!-- ✅ Checkbox aligned -->
+  <!-- ⚡ Quick Filters -->
+  <div class="quick-filters">
+    <button class="qf-btn" onclick="quickFilter('diesel')">⛽ Diesel</button>
+    <button class="qf-btn" onclick="quickFilter('petrol')">🔋 Petrol</button>
+    <button class="qf-btn" onclick="quickFilter('under20')">💰 Under 20L</button>
+    <button class="qf-btn" onclick="quickFilter('showroom')">🏢 Showroom</button>
+    <button class="qf-btn qf-clear" onclick="quickFilter('clear')">✖ Clear</button>
+  </div>
+
+  <!-- ✅ Showroom Checkbox -->
   <label class="filter-row">
     <input type="checkbox" id="showroomOnly">
     <span>Show In Showroom Only</span>

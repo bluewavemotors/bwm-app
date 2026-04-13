@@ -18,7 +18,7 @@ html {
   flex: 1;
   overflow-y: auto;
   padding-bottom: 20px;
-  min-height: 0;   /* 🔥 MUST */
+  min-height: 0;
 }
 
 #loading, #lastUpdated {
@@ -37,6 +37,7 @@ html {
   margin-top: 10px;
   border-radius: 8px;
   border: none;
+  box-sizing: border-box;
 }
 
 .car-card {
@@ -69,9 +70,9 @@ html {
   margin-top: 6px;
 }
 
-.green { background: #d4edda; }
+.green  { background: #d4edda; }
 .yellow { background: #fff3cd; }
-.grey { background: #e2e3e5; }
+.grey   { background: #e2e3e5; }
 
 .header-top {
   display: flex;
@@ -92,7 +93,6 @@ html {
   white-space: nowrap;
 }
 
-/* 🔥 FORCE PERFECT ALIGNMENT */
 .filter-row input {
   transform: scale(1.2);
   margin: 0;
@@ -109,6 +109,7 @@ html {
   padding: 8px;
   margin-top: 8px;
   border-radius: 6px;
+  box-sizing: border-box;
 }
 
 button {
@@ -118,8 +119,8 @@ button {
 #lastUpdated {
   text-align: center;
   font-size: 12px;
-  color: #000000;   /* pure black */
-  font-weight: 500; /* slight bold for clarity */
+  color: #000000;
+  font-weight: 500;
   margin-top: 5px;
 }
 
@@ -142,6 +143,139 @@ button {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
+  0%   { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* ─── QUICK FILTERS ──────────────────────────────────────────────────────── */
+.quick-filters {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.qf-btn {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid #555;
+  background: transparent;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.qf-btn:active {
+  background: #333;
+}
+
+.qf-clear {
+  border-color: #c0392b;
+  color: #ff6b6b;
+}
+
+/* ─── CARD THUMBNAIL (list view) ─────────────────────────────────────────── */
+.card-thumb {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* ─── IMAGE SLIDER (detail view) ─────────────────────────────────────────── */
+.image-slider {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  gap: 8px;
+  margin-bottom: 6px;
+  scrollbar-width: none;      /* Firefox */
+  border-radius: 8px;
+}
+
+.image-slider::-webkit-scrollbar {
+  display: none;              /* Chrome / Safari */
+}
+
+.img-wrap {
+  position: relative;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.img-wrap img {
+  height: 180px;
+  width: 240px;
+  object-fit: cover;
+  display: block;
+}
+
+.img-wrap.img-selected {
+  border-color: #2196F3;
+}
+
+/* Circular checkmark badge on each image */
+.img-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid white;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: white;
+  transition: background 0.2s;
+}
+
+.img-check.selected {
+  background: #2196F3;
+  border-color: #2196F3;
+}
+
+.img-check.selected::after {
+  content: '✓';
+  font-size: 13px;
+}
+
+.img-hint {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 10px;
+}
+
+/* Placeholder when no images exist */
+.no-image {
+  background: #f0f0f0;
+  color: #aaa;
+  text-align: center;
+  padding: 28px 0;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+/* ─── SHARE SNAPSHOT BADGE ───────────────────────────────────────────────── */
+.share-badge {
+  display: inline-block;
+  background: #e8f4fd;
+  color: #1565c0;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin-bottom: 10px;
 }
