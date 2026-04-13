@@ -86,6 +86,17 @@ function formatPrice(price) {
   return '₹ ' + n.toLocaleString('en-IN');
 }
 
+function sortCars(cars, type) {
+  if (!type) return cars;
+
+  return cars.sort((a, b) => {
+    if (type === "priceLow") return parsePrice(a.price) - parsePrice(b.price);
+    if (type === "priceHigh") return parsePrice(b.price) - parsePrice(a.price);
+    if (type === "kmLow") return a.km - b.km;
+    if (type === "yearNew") return b.year - a.year;
+  });
+}
+
 // ─── DATE ─────────────────────────────────────────────────────────────────────
 function formatDateTime(date) {
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -112,6 +123,7 @@ function updateClearButton() {
 
 // ─── LOAD CARS ────────────────────────────────────────────────────────────────
 async function loadCars() {
+  localStorage.setItem("carsCache", JSON.stringify(carsData));
   const loadingDiv = document.getElementById("loading");
   const lastUpdatedDiv = document.getElementById("lastUpdated");
 
@@ -121,7 +133,7 @@ async function loadCars() {
 
     const response = await fetch(API_URL + "?t=" + new Date().getTime());
     const result = await response.json();
-    carsData = result?.cars || [];
+    carsData = (result?.cars || []).map(sanitizeCar);
 
     loadingDiv.style.display = "none";
 
@@ -131,8 +143,54 @@ async function loadCars() {
     applyFilters();
 
   } catch (error) {
-    loadingDiv.innerHTML = "❌ Error loading data";
+    const cached = localStorage.getItem("carsCache");
+
+    if (cached) {
+      carsData = JSON.parse(cached);
+      applyFilters();
+      showError("⚠️ Offline mode (cached data)", loadCars);
+    } else {
+      showError("❌ No data available", loadCars);
+    }
   }
+}
+
+function showError(message, retryFn) {
+  const loadingDiv = document.getElementById("loading");
+  if (!loadingDiv) return;
+
+  loadingDiv.style.display = "block";
+
+  const retryButton = retryFn
+    ? `<button onclick="${retryFn.name}()" style="
+        padding:8px 14px;
+        border:none;
+        border-radius:6px;
+        background:#444;
+        color:#fff;
+        cursor:pointer;
+      ">
+        🔄 Retry
+      </button>`
+    : "";
+
+  loadingDiv.innerHTML = `
+    <div style="text-align:center;">
+      ${message}<br><br>
+      ${retryButton}
+    </div>
+  `;
+}
+
+function sanitizeCar(car) {
+  return {
+    id: car.id || "",
+    brand: (car.brand || "").toString(),
+    model: (car.model || "").toString(),
+    price: car.price || 0,
+    km: Number(car.km) || 0,
+    images: car.images || ""
+  };
 }
 
 // ✅ Handle ?car=ID for simple deep-link sharing (shows live data)
@@ -222,7 +280,10 @@ function displayCars(cars) {
 
   cars.forEach(car => {
 
-    const firstImage = car.images ? car.images.split(",")[0] : "";
+    // ✅ Safe image extraction
+    const firstImage = car.images
+      ? car.images.split(",").map(i => i.trim()).find(i => i.startsWith("http"))
+      : "";
 
     let statusClass = "yellow";
     let statusText = "Yard / Incoming";
@@ -240,14 +301,17 @@ function displayCars(cars) {
     list.innerHTML += `
       <div class="car-card" onclick="showDetails('${car.id}')">
 
-        ${firstImage ? `<img src="${firstImage}" class="car-image" loading="lazy">` : ""}
+        ${firstImage 
+          ? `<img src="${getOptimizedImage(firstImage, 400)}" class="car-image" loading="lazy">` 
+          : `<div class="no-image">No Image</div>`
+        }
 
         <div><strong>${car.brand} ${car.model}</strong></div>
         <div>${car.variant || ""}</div>
-        <div>${car.year} | ${car.fuel} | ${car.km} km</div>
+        <div>${car.year || "-"} | ${car.fuel || "-"} | ${car.km || 0} km</div>
 
         <div class="price-status-row">
-          <div class="price"> ${formatPriceShort(car.price)}</div>
+          <div class="price">${formatPriceShort(car.price)}</div>
           <div class="status ${statusClass}">${statusText}</div>
         </div>
       </div>
@@ -262,6 +326,9 @@ function showDetails(id) {
 
   const list = document.getElementById("carList");
 
+  // ✅ Reset selection
+  selectedImages = [];
+
   let imagesHTML = "";
 
   if (car.images && car.images.trim() !== "") {
@@ -269,17 +336,20 @@ function showDetails(id) {
     const imgs = car.images
       .split(",")
       .map(i => i.trim())
-      .filter(i => i.startsWith("http")); // ✅ IMPORTANT
+      .filter(i => i.startsWith("http"));
 
     if (imgs.length > 0) {
 
       imagesHTML = `
-        <div class="slider">
-          ${imgs.map(img => `
-            <img src="${img}" class="slide" loading="lazy"
-              onerror="this.style.display='none'">
+        <div class="image-slider">
+          ${imgs.map((img, i) => `
+            <div class="img-wrap" onclick="toggleSelect(${i})">
+              <img src="${getOptimizedImage(img)}" loading="lazy" id="img-view-${i}">
+              <div class="img-check" id="img-${i}"></div>
+            </div>
           `).join("")}
         </div>
+        <div class="img-hint">Tap images to select for sharing</div>
       `;
 
     } else {
@@ -297,16 +367,16 @@ function showDetails(id) {
 
       <h3>${car.brand} ${car.model}</h3>
       <p><strong>Variant:</strong> ${car.variant || "-"}</p>
-      <p><strong>Year:</strong> ${car.year}</p>
-      <p><strong>Fuel:</strong> ${car.fuel}</p>
-      <p><strong>Mileage:</strong> ${car.km} km</p>
-      <p><strong>Owners:</strong> ${car.owner}</p>
-      <p><strong>Color:</strong> ${car.color}</p>
+      <p><strong>Year:</strong> ${car.year || "-"}</p>
+      <p><strong>Fuel:</strong> ${car.fuel || "-"}</p>
+      <p><strong>Mileage:</strong> ${car.km || 0} km</p>
+      <p><strong>Owners:</strong> ${car.owner || "-"}</p>
+      <p><strong>Color:</strong> ${car.color || "-"}</p>
 
       <div class="price">₹ ${formatIndianNumber(car.price)}</div>
 
       <br>
-      <button onclick="event.stopPropagation(); shareCar(${car.id})">
+      <button onclick="event.stopPropagation(); shareCar('${car.id}')">
         📤 Share on WhatsApp
       </button>
 
@@ -317,6 +387,15 @@ function showDetails(id) {
       </button>
     </div>
   `;
+}
+<img src="${getOptimizedImage(img, 800)}" loading="lazy" id="img-view-${i}"></img>
+function getOptimizedImage(url, size = 800) {
+  if (!url) return "";
+
+  const match = url.match(/[-\w]{25,}/);
+  if (!match) return url;
+
+  return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w${size}`;
 }
 
 function clearSearch() {
@@ -331,61 +410,51 @@ function goBack() {
 }
 
 function toggleSelect(index) {
+  const el = document.getElementById("img-" + index);
+  const img = document.getElementById("img-view-" + index);
 
-  const checkbox = document.getElementById("img-" + index);
-  const image = document.getElementById("img-view-" + index);
+  const isSelected = selectedImages.includes(index);
 
-  checkbox.checked = !checkbox.checked;
-
-  if (checkbox.checked) {
-    if (!selectedImages.includes(index)) {
-      selectedImages.push(index);
-    }
-    image.classList.add("selected-img");
-  } else {
+  if (isSelected) {
     selectedImages = selectedImages.filter(i => i !== index);
-    image.classList.remove("selected-img");
+    el.classList.remove("selected");
+    img.classList.remove("selected-img");
+  } else {
+    selectedImages.push(index);
+    el.classList.add("selected");
+    img.classList.add("selected-img");
   }
 }
 
 // 📤 SHARE
 async function shareCar(id) {
-
   const car = carsData.find(c => c.id == id);
   if (!car) return;
 
   const imgs = car.images ? car.images.split(",") : [];
 
-  // ✅ Use selected images if available, else fallback
-  let selectedImgs;
+  let selectedImgs = selectedImages.length > 0
+    ? selectedImages.map(i => imgs[i]).filter(Boolean)
+    : imgs.slice(0, 3);
 
-  if (selectedImages && selectedImages.length > 0) {
-    selectedImgs = selectedImages
-      .map(i => imgs[i])
-      .filter(Boolean); // remove undefined safety
-  } else {
-    selectedImgs = imgs.slice(0, 3);
-  }
-
-  const payload = {
-    brand: car.brand,
-    model: car.model,
-    variant: car.variant,
-    year: car.year,
-    fuel: car.fuel,
-    km: car.km,
-    price: formatPriceShort(car.price),
-    images: selectedImgs // ✅ ALWAYS ARRAY
-  };
-
-  const res = await fetch("YOUR_APPS_SCRIPT_WEBAPP_URL", {
+  // ✅ CALL SNAPSHOT API
+  const response = await fetch(API_URL, {
     method: "POST",
-    body: JSON.stringify(payload)
+    body: JSON.stringify({
+      action: "createShare",
+      car: car,
+      images: selectedImgs
+    })
   });
 
-  const result = await res.json();
+  const result = await response.json();
 
-  const shareUrl = `${window.location.origin}/share.html?id=${result.id}`;
+  if (!result.shareId) {
+    alert("❌ Share failed");
+    return;
+  }
+
+  const shareUrl = `${window.location.origin}/share.html?id=${result.shareId}`;
 
   const message =
 `*${car.brand} ${car.model}*
@@ -393,8 +462,6 @@ async function shareCar(id) {
 ${shareUrl}
 
 Price: ${formatPriceShort(car.price)}
-
-_⚠️ Open once with internet. Then works offline._
 
 _Blue Wave Motors, Thrissur_`;
 
@@ -417,6 +484,9 @@ function applyFilters() {
   const searchValue = document.getElementById("search").value.toLowerCase();
   const showroomOnly = document.getElementById("showroomOnly").checked;
   const budgetLimit  = document.getElementById("budgetFilter").value;
+  const sortType = document.getElementById("sortFilter").value;
+
+  filtered = sortCars(filtered, sortType);
 
   let filtered = carsData.filter(car => {
 
@@ -502,4 +572,8 @@ document.getElementById("showroomOnly").addEventListener("change", applyFilters)
 document.getElementById("budgetFilter").addEventListener("change", applyFilters);
 
 // 🚀 INIT
-loadCars();
+try {
+  await loadCars();
+} catch (error) {
+  showError("❌ Failed to load cars", loadCars);
+}
