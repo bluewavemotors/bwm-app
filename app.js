@@ -446,7 +446,9 @@ async function shareCar(id) {
   const car = carsData.find(c => c.id == id);
   if (!car) return;
 
-  const imgs = car.images ? car.images.split(",") : [];
+  const imgs = car.images
+    ? car.images.split(",").map(i => i.trim())
+    : [];
 
   let selectedImgs = selectedImages.length > 0
     ? selectedImages.map(i => imgs[i]).filter(Boolean)
@@ -456,7 +458,7 @@ async function shareCar(id) {
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "text/plain;charset=utf-8"
       },
       body: JSON.stringify({
         action: "createShare",
@@ -465,10 +467,12 @@ async function shareCar(id) {
       })
     });
 
-    const result = await response.json();
+    const text = await response.text();
+    const result = JSON.parse(text);
 
     if (!result.shareId) {
       alert("❌ Share failed");
+      console.log("Response:", result);
       return;
     }
 
@@ -481,12 +485,13 @@ ${shareUrl}
 
 Price: ${formatPriceShort(car.price)}
 
-_Blue Wave Motors, Thrissur_`;
+_Blue Wave Motors_`;
 
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
 
   } catch (err) {
     alert("❌ Share failed");
+    console.error(err);
   }
 }
 
