@@ -59,7 +59,7 @@ async function loadShare() {
   }
 
   try {
-    const res = await fetch(API + "?id=" + id);
+    const res = await fetch(API + "?share=" + id);
     const data = await res.json();
 
     // 🔒 Expiry check

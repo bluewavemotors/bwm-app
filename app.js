@@ -410,19 +410,22 @@ function goBack() {
 }
 
 function toggleSelect(index) {
-  const el = document.getElementById("img-" + index);
+  const check = document.getElementById("img-" + index);
   const img = document.getElementById("img-view-" + index);
+  const wrap = check.parentElement;
 
   const isSelected = selectedImages.includes(index);
 
   if (isSelected) {
     selectedImages = selectedImages.filter(i => i !== index);
-    el.classList.remove("selected");
+    check.classList.remove("selected");
     img.classList.remove("selected-img");
+    wrap.classList.remove("img-selected");
   } else {
     selectedImages.push(index);
-    el.classList.add("selected");
+    check.classList.add("selected");
     img.classList.add("selected-img");
+    wrap.classList.add("img-selected");
   }
 }
 
@@ -471,7 +474,7 @@ _Blue Wave Motors, Thrissur_`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
 
   } catch (err) {
-    alert("❌ Share failed (network error)");
+    alert("❌ Share failed");
     console.error(err);
   }
 }
@@ -582,7 +585,7 @@ document.getElementById("budgetFilter").addEventListener("change", applyFilters)
 
 // 🚀 INIT
 try {
-  await loadCars();
+  loadCars();
 } catch (error) {
   showError("❌ Failed to load cars", loadCars);
 }
