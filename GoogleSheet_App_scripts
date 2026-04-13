@@ -1,63 +1,10 @@
 /** BWM-App scripts-------------------------------------<begins>*/
-/** version date 2026-04-10 */
-/** BWM-App main script */
-function doGet(e) {
+// =============================================================================
+// BWM INVENTORY — Google Apps Script
+// =============================================================================
+// version date 2026-04-13
+// BWM-App main script
 
-  const sheet = SpreadsheetApp
-    .getActiveSpreadsheet()
-    .getSheetByName("To-Share"); // Your actual sheet name
-
-  const data = sheet.getDataRange().getValues();
-  const headers = data.shift();
-
-  const map = {
-    "SL NO": "id",
-    "REG NO": "regNo",
-    "BRAND": "brand",
-    "MODEL": "model",
-    "VARIANT": "variant",
-    "PRICE": "price",
-    "COLOR": "color",
-    "YEAR": "year",
-    "FUEL": "fuel",
-    "MILEAGE": "km",
-    "OWNER": "owner",
-    "Ins TP Expiry": "tpExpiry",
-    "Ins OD Expiry": "odExpiry",
-    "IDV": "idv",
-    "In Showroom": "status",
-    "IMAGES": "images"
-  };
-
-  let cars = data.map(row => {
-
-    let obj = {};
-
-    headers.forEach((h, i) => {
-      let key = map[h] || h;
-      obj[key] = row[i];
-    });
-
-    obj.showroom = (obj.status || "").toString().includes("Yes");
-    obj.booked = (obj.status || "").toString().includes("Booked");
-
-    return obj;
-  });
-
-  const lastUpdated = Utilities.base64Encode(
-    Utilities.computeDigest(
-      Utilities.DigestAlgorithm.MD5,
-      JSON.stringify(data)
-    )
-  );
-
-  return ContentService
-    .createTextOutput(JSON.stringify({
-      lastUpdated: lastUpdated,
-      cars: cars
-    }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
 
 /** To populate Car image urls in column IMAGES in "Stock" sheet */
 function updateAllCarImages() {
@@ -104,39 +51,235 @@ function updateAllCarImages() {
   }
 }
 
-const FOLDER_ID = "YOUR_DRIVE_FOLDER_ID"; // create a folder
+// SHEET SETUP:
+//   Sheet 1 name : "Inventory"  (your car data)
+//   Sheet 2 name : "Shares"     (auto-created on first share)
+//
+// INVENTORY SHEET — expected column order (A to Q):
+//   A  = ID
+//   B  = Brand
+//   C  = Model
+//   D  = Variant
+//   E  = Year
+//   F  = Fuel
+//   G  = KM (mileage)
+//   H  = Owner (number of owners)
+//   I  = Color
+//   J  = IDV
+//   K  = TP Expiry
+//   L  = OD Expiry
+//   M  = Price
+//   N  = Showroom  (TRUE / FALSE)
+//   O  = Booked    (TRUE / FALSE)
+//   P  = Images    (comma-separated Google Drive file IDs)
+//
+// If your columns are in a different order, update the COL_* constants below.
+// =============================================================================
 
-function doPost(e) {
-  const data = JSON.parse(e.postData.contents);
+// ── COLUMN INDEX MAP (0-based) ────────────────────────────────────────────────
+const COL_ID        = 0;   // A
+const COL_BRAND     = 1;   // B
+const COL_MODEL     = 2;   // C
+const COL_VARIANT   = 3;   // D
+const COL_YEAR      = 4;   // E
+const COL_FUEL      = 5;   // F
+const COL_KM        = 6;   // G
+const COL_OWNER     = 7;   // H
+const COL_COLOR     = 8;   // I
+const COL_IDV       = 9;   // J
+const COL_TP_EXPIRY = 10;  // K
+const COL_OD_EXPIRY = 11;  // L
+const COL_PRICE     = 12;  // M
+const COL_SHOWROOM  = 13;  // N
+const COL_BOOKED    = 14;  // O
+const COL_IMAGES    = 15;  // P
 
-  const id = Utilities.getUuid();
+// ── SHEET NAMES ───────────────────────────────────────────────────────────────
+const INVENTORY_SHEET = "Inventory";
+const SHARES_SHEET    = "Shares";
 
-  const expiry = new Date();
-  expiry.setDate(expiry.getDate() + 3); // 🔥 3 days expiry
+// ── SHARE EXPIRY (days) ───────────────────────────────────────────────────────
+const SHARE_EXPIRY_DAYS = 7;
 
-  data.expiry = expiry;
 
-  const file = DriveApp.getFolderById(FOLDER_ID)
-    .createFile(id + ".json", JSON.stringify(data), MimeType.PLAIN_TEXT);
-
-  return ContentService.createTextOutput(JSON.stringify({
-    id: id
-  })).setMimeType(ContentService.MimeType.JSON);
-}
-
+// =============================================================================
+// doGet(e) — main entry point for all GET requests
+// =============================================================================
 function doGet(e) {
-  const id = e.parameter.id;
 
-  const files = DriveApp.getFolderById(FOLDER_ID).getFilesByName(id + ".json");
-
-  if (!files.hasNext()) {
-    return ContentService.createTextOutput("Not found");
+  // ── Handle ?share=SHARE_ID (snapshot lookup) ────────────────────────────────
+  if (e.parameter && e.parameter.share) {
+    return handleShareLookup(e.parameter.share);
   }
 
-  const file = files.next();
-  const content = file.getBlob().getDataAsString();
+  // ── Handle normal inventory fetch ──────────────────────────────────────────
+  try {
+    const ss        = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet     = ss.getSheetByName(INVENTORY_SHEET);
 
-  return ContentService.createTextOutput(content)
+    if (!sheet) {
+      return jsonResponse({ error: 'Inventory sheet not found' });
+    }
+
+    const rows        = sheet.getDataRange().getValues();
+    const lastUpdated = sheet.getLastUpdated
+      ? sheet.getLastUpdated().toISOString()
+      : new Date().toISOString();
+
+    const cars = [];
+
+    // Row 0 is the header row — skip it
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+
+      // Skip completely empty rows
+      if (!row[COL_BRAND] && !row[COL_MODEL]) continue;
+
+      cars.push({
+        id       : row[COL_ID]        || i,
+        brand    : String(row[COL_BRAND]    || "").trim(),
+        model    : String(row[COL_MODEL]    || "").trim(),
+        variant  : String(row[COL_VARIANT]  || "").trim(),
+        year     : String(row[COL_YEAR]     || "").trim(),
+        fuel     : String(row[COL_FUEL]     || "").trim(),
+        km       : String(row[COL_KM]       || "").trim(),
+        owner    : String(row[COL_OWNER]    || "").trim(),
+        color    : String(row[COL_COLOR]    || "").trim(),
+        idv      : String(row[COL_IDV]      || "").trim(),
+        tpExpiry : formatSheetDate(row[COL_TP_EXPIRY]),
+        odExpiry : formatSheetDate(row[COL_OD_EXPIRY]),
+        price    : String(row[COL_PRICE]    || "").trim(),
+        showroom : toBool(row[COL_SHOWROOM]),
+        booked   : toBool(row[COL_BOOKED]),
+        images   : String(row[COL_IMAGES]   || "").trim(),
+      });
+    }
+
+    return jsonResponse({
+      lastUpdated : lastUpdated,
+      cars        : cars,
+    });
+
+  } catch (err) {
+    return jsonResponse({ error: err.toString() });
+  }
+}
+
+
+// =============================================================================
+// doPost(e) — called when app creates a share snapshot
+// =============================================================================
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+
+    if (data.action === 'createShare') {
+      const ss          = SpreadsheetApp.getActiveSpreadsheet();
+      const sharesSheet = ss.getSheetByName(SHARES_SHEET) || ss.insertSheet(SHARES_SHEET);
+
+      // Write header row if sheet was just created
+      if (sharesSheet.getLastRow() === 0) {
+        sharesSheet.appendRow(['shareId', 'carData', 'expiry', 'images', 'createdAt']);
+        sharesSheet.setFrozenRows(1);
+      }
+
+      // Generate a short unique 12-character ID
+      const shareId = Utilities.getUuid().replace(/-/g, '').substring(0, 12);
+
+      // Set expiry
+      const expiry = new Date();
+      expiry.setDate(expiry.getDate() + SHARE_EXPIRY_DAYS);
+
+      sharesSheet.appendRow([
+        shareId,
+        JSON.stringify(data.car),
+        expiry.toISOString(),
+        JSON.stringify(data.images || []),
+        new Date().toISOString(),
+      ]);
+
+      return jsonResponse({ shareId: shareId });
+    }
+
+    return jsonResponse({ error: 'unknown_action' });
+
+  } catch (err) {
+    return jsonResponse({ error: err.toString() });
+  }
+}
+
+
+// =============================================================================
+// handleShareLookup(shareId) — finds and returns a saved snapshot
+// =============================================================================
+function handleShareLookup(shareId) {
+  try {
+    const ss          = SpreadsheetApp.getActiveSpreadsheet();
+    const sharesSheet = ss.getSheetByName(SHARES_SHEET);
+
+    if (!sharesSheet) {
+      return jsonResponse({ error: 'not_found' });
+    }
+
+    const rows = sharesSheet.getDataRange().getValues();
+
+    // Row 0 is the header — skip it
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][0] !== shareId) continue;
+
+      const expiry = new Date(rows[i][2]);
+
+      if (expiry < new Date()) {
+        return jsonResponse({ error: 'expired' });
+      }
+
+      return jsonResponse({
+        type   : 'share',
+        car    : JSON.parse(rows[i][1]),
+        images : JSON.parse(rows[i][3] || '[]'),
+      });
+    }
+
+    return jsonResponse({ error: 'not_found' });
+
+  } catch (err) {
+    return jsonResponse({ error: err.toString() });
+  }
+}
+
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+// Wraps any object as a JSON HTTP response
+function jsonResponse(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// Converts sheet cell to boolean
+// Accepts: TRUE/FALSE (checkbox), "yes"/"no", 1/0
+function toBool(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string')  return value.toLowerCase() === 'true' || value.toLowerCase() === 'yes';
+  if (typeof value === 'number')  return value === 1;
+  return false;
+}
+
+// Formats a date cell safely — returns empty string if blank
+function formatSheetDate(value) {
+  if (!value) return "";
+  try {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return String(value);
+    const day   = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year  = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch (e) {
+    return String(value);
+  }
 }
 /** BWM-App scripts-------------------------------------<end>*/

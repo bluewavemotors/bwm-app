@@ -190,6 +190,15 @@ function sanitizeCar(car) {
     id: car.id || "",
     brand: (car.brand || "").toString(),
     model: (car.model || "").toString(),
+    variant: (car.variant || "").toString(),
+    color: (car.color || "").toString(),
+    fuel: (car.fuel || "").toString(),
+    year: (car.year || "").toString(),
+    owner: (car.owner || "").toString(),
+
+    showroom: car.showroom === true || car.showroom === "TRUE",
+    booked: car.booked === true || car.booked === "TRUE",
+
     price: car.price || 0,
     km: Number(car.km) || 0,
     images: car.images || ""
@@ -510,9 +519,8 @@ function applyFilters() {
       car.fuel,
       car.year
     ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
+      .map(x => (x || "").toString().toLowerCase())
+      .join(" ");
 
     const matchesSearch = searchableText.includes(searchValue);
 
@@ -583,10 +591,14 @@ function quickFilter(type) {
 // 🎯 EVENT LISTENERS
 window.addEventListener("DOMContentLoaded", function () {
 
-  document.getElementById("search").addEventListener("input", applyFilters);
+  document.getElementById("search").addEventListener("input", function () {
+    applyFilters();
+    updateClearButton();
+  });
+
   document.getElementById("showroomOnly").addEventListener("change", applyFilters);
   document.getElementById("budgetFilter").addEventListener("change", applyFilters);
-  document.getElementById("sortFilter").addEventListener("change", applyFilters); // ✅ ADD THIS
+  document.getElementById("sortFilter").addEventListener("change", applyFilters);
 
   loadCars();
 
