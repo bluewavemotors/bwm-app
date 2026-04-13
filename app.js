@@ -388,7 +388,7 @@ function showDetails(id) {
     </div>
   `;
 }
-<img src="${getOptimizedImage(img, 800)}" loading="lazy" id="img-view-${i}"></img>
+
 function getOptimizedImage(url, size = 800) {
   if (!url) return "";
 
@@ -437,26 +437,29 @@ async function shareCar(id) {
     ? selectedImages.map(i => imgs[i]).filter(Boolean)
     : imgs.slice(0, 3);
 
-  // ✅ CALL SNAPSHOT API
-  const response = await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "createShare",
-      car: car,
-      images: selectedImgs
-    })
-  });
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        action: "createShare",
+        car: car,
+        images: selectedImgs
+      })
+    });
 
-  const result = await response.json();
+    const result = await response.json();
 
-  if (!result.shareId) {
-    alert("❌ Share failed");
-    return;
-  }
+    if (!result.shareId) {
+      alert("❌ Share failed");
+      return;
+    }
 
-  const shareUrl = `${window.location.origin}/share.html?id=${result.shareId}`;
+    const shareUrl = `${window.location.origin}/share.html?id=${result.shareId}`;
 
-  const message =
+    const message =
 `*${car.brand} ${car.model}*
 
 ${shareUrl}
@@ -465,7 +468,12 @@ Price: ${formatPriceShort(car.price)}
 
 _Blue Wave Motors, Thrissur_`;
 
-  window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+
+  } catch (err) {
+    alert("❌ Share failed (network error)");
+    console.error(err);
+  }
 }
 
 // ✅ Calls Apps Script doPost() to create a snapshot with 7-day expiry
@@ -485,8 +493,6 @@ function applyFilters() {
   const showroomOnly = document.getElementById("showroomOnly").checked;
   const budgetLimit  = document.getElementById("budgetFilter").value;
   const sortType = document.getElementById("sortFilter").value;
-
-  filtered = sortCars(filtered, sortType);
 
   let filtered = carsData.filter(car => {
 
@@ -519,6 +525,9 @@ function applyFilters() {
 
     return matchesSearch && matchesShowroom && matchesBudget;
   });
+
+  // ✅ SORT AFTER FILTER
+  filtered = sortCars(filtered, sortType);
 
   displayCars(filtered);
 }
