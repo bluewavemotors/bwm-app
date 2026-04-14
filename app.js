@@ -23,6 +23,126 @@ function installApp() {
   }
 }
 
+// Utility: show a short toast message
+function showToast(msg, ms = 2200) {
+  let t = document.getElementById('copilot-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'copilot-toast';
+    t.className = 'toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+// Copy fallback
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('Link copied to clipboard');
+    return true;
+  } catch (e) {
+    // older browsers fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); showToast('Link copied to clipboard'); return true; }
+    catch (err) { return false; }
+    finally { document.body.removeChild(ta); }
+  }
+}
+
+// Main share function: prefer Web Share API, then wa.me, then whatsapp://, then clipboard
+async function shareOnWhatsApp({ text, url }) {
+  // Build message
+  const message = url ? `${text}\n\n${url}` : text;
+  const encoded = encodeURIComponent(message);
+  const waWeb = `https://wa.me/?text=${encoded}`;
+  const waApp = `whatsapp://send?text=${encoded}`;
+
+  // 1) Web Share API (native share sheet)
+  if (navigator.share) {
+    try {
+      await navigator.share({ text: message, url });
+      return { success: true, method: 'web-share' };
+    } catch (err) {
+      // user cancelled or failed — fall through to web fallback
+    }
+  }
+
+  // 2) Try opening wa.me in a new tab/window (user gesture required)
+  // This is the most reliable cross-platform fallback for mobile browsers.
+  const newWin = window.open(waWeb, '_blank');
+
+  // 3) Try to open native app scheme as a last resort, using iframe + visibility trick
+  // Only attempt if on mobile (optional but recommended)
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) {
+    let handled = false;
+    const onVisibility = () => { handled = document.hidden; };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    // Use iframe to attempt app scheme without navigating away
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = waApp;
+    document.body.appendChild(iframe);
+
+    // Cleanup after short timeout
+    await new Promise(resolve => setTimeout(resolve, 800));
+    document.removeEventListener('visibilitychange', onVisibility);
+    try { document.body.removeChild(iframe); } catch (e) {}
+    if (handled) return { success: true, method: 'whatsapp-app' };
+  }
+
+  // 4) If newWin was blocked or nothing handled, fallback to copying link
+  if (!newWin) {
+    // open in same tab as last resort (but avoid if you don't want to navigate away)
+    try { window.location.href = waWeb; return { success: true, method: 'wa-web-redirect' }; }
+    catch (e) { /* ignore */ }
+  }
+
+  // 5) Clipboard fallback
+  const copied = await copyToClipboard(message);
+  if (copied) return { success: true, method: 'clipboard' };
+
+  // final failure
+  showToast('Could not open WhatsApp. Please copy the link manually.');
+  return { success: false };
+}
+
+// Hook up the button (example)
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('shareWhatsApp');
+  if (!btn) return;
+  btn.addEventListener('click', async (e) => {
+    // Build the share text and URL from your app state
+    // Example: share the current car detail page
+    const title = document.querySelector('.car-title')?.textContent?.trim() || 'Check this car';
+    const price = document.querySelector('.price')?.textContent?.trim() || '';
+    const pageUrl = window.location.href;
+
+    const text = `${title} ${price}`.trim();
+    // Call share function (must be inside user gesture)
+    const result = await shareOnWhatsApp({ text, url: pageUrl });
+
+    // Optional: analytics or UI feedback
+    if (result.success) {
+      console.log('Shared via', result.method);
+      if (result.method === 'clipboard') showToast('Share text copied — paste into WhatsApp');
+    } else {
+      console.warn('Share failed');
+    }
+  });
+});
+
+
 // ─── PRICE HELPERS ────────────────────────────────────────────────────────────
 function formatIndianNumber(price) {
   const number = parsePrice(price);
