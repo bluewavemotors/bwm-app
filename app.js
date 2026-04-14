@@ -242,14 +242,14 @@ function showSnapshotDetails(car, sharedImages) {
       ${buildImageSlider(images, 'snap')}
       <h3>${car.brand} ${car.model}</h3>
       <p><strong>Variant:</strong> ${car.variant || "-"}</p>
-      <p><strong>Year:</strong> ${car.year}</p>
-      <p><strong>Fuel:</strong> ${car.fuel}</p>
-      <p><strong>Mileage:</strong> ${car.km} km</p>
-      <p><strong>Owners:</strong> ${car.owner}</p>
-      <p><strong>Color:</strong> ${car.color}</p>
-      <p><strong>IDV:</strong> ${formatPrice(car.idv)}</p>
-      <p><strong>TP Expiry:</strong> ${car.tpExpiry}</p>
-      <p><strong>OD Expiry:</strong> ${car.odExpiry}</p>
+      <p><strong>Year:</strong> ${car.year || "-"}</p>
+      <p><strong>Fuel:</strong> ${car.fuel || "-"}</p>
+      <p><strong>Mileage:</strong> ${car.km || 0} km</p>
+      <p><strong>Owners:</strong> ${car.owner || "-"}</p>
+      <p><strong>Color:</strong> ${car.color || "-"}</p>
+      <p><strong>IDV:</strong> ${formatPrice(car.idv || 0)}</p>
+      <p><strong>TP Expiry:</strong> ${car.tpExpiry || "-"}</p>
+      <p><strong>OD Expiry:</strong> ${car.odExpiry || "-"}</p>
       <div class="price">${formatPrice(car.price)}</div>
       <br>
       <button onclick="window.location.href=window.location.pathname">⬅ View All Cars</button>
@@ -404,7 +404,6 @@ async function shareCar(id) {
   const car = carsData.find(c => c.id == id);
   if (!car) return;
 
-  // Show loading state on button
   const btn = document.getElementById("shareBtn");
   if (btn) {
     btn.disabled = true;
@@ -418,14 +417,10 @@ async function shareCar(id) {
     : imgs.slice(0, 3);
 
   try {
-    // FIX: added redirect: 'follow' — Google Apps Script issues a 302 redirect
-    // on all POST requests; without this flag the fetch throws a Network Error.
     const response = await fetch(API_URL, {
       method: "POST",
       redirect: "follow",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
         action: "createShare",
         car: car,
@@ -433,20 +428,25 @@ async function shareCar(id) {
       })
     });
 
-    const result = await response.json();
-
-    if (!result || !result.shareId) {
-      alert("❌ Share failed. Please try again.");
-      console.error("Unexpected share response:", result);
-      return;
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}`);
     }
 
-    const shareUrl = `${window.location.origin}${window.location.pathname.replace('index.html','').replace(/\/+$/, '')}/share.html?id=${result.shareId}`;
+    const result = await response.json();
+
+    if (!result?.shareId) {
+      throw new Error("Share ID missing in response");
+    }
+
+    // Improved URL construction using URL API
+    const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, "");
+    const shareUrl = new URL("share.html", base);
+    shareUrl.searchParams.set("id", result.shareId);
 
     const message =
 `*${car.brand} ${car.model}*
 
-${shareUrl}
+${shareUrl.href}
 
 Price: ${formatPriceShort(car.price)}
 
@@ -455,10 +455,9 @@ _Blue Wave Motors_`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
 
   } catch (err) {
-    alert("❌ Network Error. Please check your connection and try again.");
     console.error("shareCar error:", err);
+    alert("❌ Failed to create share link. Please check your connection and try again.");
   } finally {
-    // Restore button state
     if (btn) {
       btn.disabled = false;
       btn.textContent = "📤 Share on WhatsApp";

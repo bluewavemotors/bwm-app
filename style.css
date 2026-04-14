@@ -116,6 +116,7 @@ button {
   cursor: pointer;
   position: relative;
   z-index: 10;
+  touch-action: manipulation;
 }
 
 #lastUpdated {
