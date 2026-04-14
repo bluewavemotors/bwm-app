@@ -3,94 +3,199 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Blue Wave Motors car details</title>
+  <title>Blue Wave Motors — Car Details</title>
 
   <style>
     body {
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       margin: 0;
       background: #f2f2f2;
+      color: #222;
     }
 
     .card {
       background: white;
-      margin: 10px;
-      padding: 12px;
-      border-radius: 10px;
+      margin: 12px;
+      padding: 14px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .brand-model {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 10px 0 4px;
     }
 
     .slider {
       display: flex;
       overflow-x: auto;
       gap: 10px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      border-radius: 10px;
     }
+
+    .slider::-webkit-scrollbar { display: none; }
 
     .slide {
       flex: 0 0 90%;
       height: 220px;
       object-fit: cover;
       border-radius: 10px;
+      scroll-snap-align: start;
+    }
+
+    .no-image {
+      background: #f0f0f0;
+      color: #aaa;
+      text-align: center;
+      padding: 40px 0;
+      border-radius: 10px;
+      font-size: 14px;
     }
 
     .price {
       font-weight: bold;
-      font-size: 18px;
-      margin-top: 10px;
+      font-size: 22px;
+      color: #111;
+      margin: 12px 0 6px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #e8f4fd;
+      color: #1565c0;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+
+    p { margin: 6px 0; font-size: 14px; }
+
+    .error-box {
+      text-align: center;
+      padding: 60px 20px;
+      font-size: 16px;
+      color: #c0392b;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      font-size: 14px;
+      color: #666;
     }
   </style>
 </head>
 
 <body>
 
-<div id="content"></div>
+<div id="content"><div class="loading">⏳ Loading car details...</div></div>
 
 <script>
 
 const API = "https://script.google.com/macros/s/AKfycbwwE7Vh-aojmNafegOxlHAZhbqbBW9YRZI6LpjE3oAxPb70zRfKvci3CyxfkafGLF75/exec";
 
+function formatPrice(price) {
+  if (!price) return "Price on request";
+  let text  = price.toString().toLowerCase();
+  let match = text.match(/[\d.]+/);
+  if (!match) return price;
+  let n = parseFloat(match[0]);
+  if (text.includes("crore")) n = n * 10000000;
+  else if (text.includes("lakh")) n = n * 100000;
+  if (n >= 10000000) return '₹ ' + (n / 10000000).toFixed(2) + ' Cr';
+  if (n >= 100000)   return '₹ ' + (n / 100000).toFixed(2) + ' L';
+  return '₹ ' + n.toLocaleString('en-IN');
+}
+
+function getOptimizedImage(url, size = 800) {
+  if (!url) return "";
+  const match = url.match(/[-\w]{25,}/);
+  if (!match) return url;
+  return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w${size}`;
+}
+
 async function loadShare() {
 
-  const params = new URLSearchParams(window.location.search);
-  const id = params.get("id");
+  const params  = new URLSearchParams(window.location.search);
+  const shareId = params.get("id");
 
-  if (!id) {
-    document.body.innerHTML = "❌ Invalid link";
+  if (!shareId) {
+    document.getElementById("content").innerHTML =
+      `<div class="error-box">❌ Invalid or missing share link.</div>`;
     return;
   }
 
   try {
-    const res = await fetch(API + "?share=" + id);
+    const res  = await fetch(API + "?share=" + encodeURIComponent(shareId) + "&t=" + Date.now());
     const data = await res.json();
 
-    // 🔒 Expiry check
-    if (new Date() > new Date(data.expiry)) {
-      document.body.innerHTML = "❌ This link has expired";
+    // Expiry and error states are handled server-side by GAS
+    if (data.error === "expired") {
+      document.getElementById("content").innerHTML =
+        `<div class="error-box">⏰ This share link has expired.</div>`;
       return;
     }
 
-    // ✅ FIX: handle both array & string
+    if (data.error) {
+      document.getElementById("content").innerHTML =
+        `<div class="error-box">❌ Share link not found.</div>`;
+      return;
+    }
+
+    // FIX: GAS returns { car: {...}, images: [...] }
+    // Previously this was reading data.brand etc (wrong), now uses data.car.brand
+    const car = data.car;
+
+    // FIX: images is already an array from GAS; handle both array and comma-string
     const images = Array.isArray(data.images)
       ? data.images
-      : (data.images ? data.images.split(",") : []);
+      : (data.images ? data.images.split(",").map(s => s.trim()).filter(Boolean) : []);
+
+    const slidesHTML = images.length
+      ? images.map(img =>
+          `<img src="${getOptimizedImage(img)}" class="slide" loading="lazy">`
+        ).join("")
+      : `<div class="no-image">📷 No Images Available</div>`;
+
+    document.title = `${car.brand} ${car.model} — Blue Wave Motors`;
 
     document.getElementById("content").innerHTML = `
       <div class="card">
 
-        <div class="slider">
-          ${images.map(img => `<img src="${img}" class="slide">`).join("")}
-        </div>
+        <div class="badge">📤 Shared by Blue Wave Motors</div>
 
-        <h3>${data.brand} ${data.model}</h3>
-        <p>${data.variant || ""}</p>
-        <p>${data.year} | ${data.fuel} | ${data.km} km</p>
+        <div class="slider">${slidesHTML}</div>
 
-        <div class="price">${data.price}</div>
+        <div class="brand-model">${car.brand} ${car.model}</div>
+        <p>${car.variant || ""}</p>
+        <p>${car.year} &nbsp;|&nbsp; ${car.fuel} &nbsp;|&nbsp; ${Number(car.km).toLocaleString('en-IN')} km</p>
+        <p><strong>Owners:</strong> ${car.owner || "-"}</p>
+        <p><strong>Color:</strong> ${car.color || "-"}</p>
+
+        <div class="price">${formatPrice(car.price)}</div>
 
       </div>
+
+      <div class="footer">Blue Wave Motors, Thrissur</div>
     `;
 
   } catch (err) {
-    document.body.innerHTML = "❌ Error loading data";
+    document.getElementById("content").innerHTML =
+      `<div class="error-box">❌ Error loading details. Please check your connection.</div>`;
+    console.error("share.html loadShare error:", err);
   }
 }
 
