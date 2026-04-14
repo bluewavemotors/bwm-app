@@ -400,6 +400,7 @@ function toggleSelect(index) {
 }
 
 // ─── SHARE ────────────────────────────────────────────────────────────────────
+// ─── SHARE ────────────────────────────────────────────────────────────────────
 async function shareCar(id) {
   const car = carsData.find(c => c.id == id);
   if (!car) return;
@@ -420,6 +421,7 @@ async function shareCar(id) {
     const response = await fetch(API_URL, {
       method: "POST",
       redirect: "follow",
+      cache: "no-store",                 // ✅ Prevents any caching interference
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
         action: "createShare",
@@ -438,7 +440,7 @@ async function shareCar(id) {
       throw new Error("Share ID missing in response");
     }
 
-    // Improved URL construction using URL API
+    // Build the share URL
     const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, "");
     const shareUrl = new URL("share.html", base);
     shareUrl.searchParams.set("id", result.shareId);

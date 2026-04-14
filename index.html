@@ -99,10 +99,20 @@
 
 <script src="app.js"></script>
 
+<!-- existing service worker registration -->
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js')
       .then(() => console.log("Service Worker Registered"));
+  }
+</script>
+
+<!-- 👇 Add this right below to force an immediate update check -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      registrations.forEach(reg => reg.update());
+    });
   }
 </script>
 

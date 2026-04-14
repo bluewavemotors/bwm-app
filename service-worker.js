@@ -1,5 +1,5 @@
-const CACHE_STATIC  = "bwm-static-v4";   // bumped version
-const CACHE_DYNAMIC = "bwm-dynamic-v4";
+const CACHE_STATIC  = "bwm-static-v5";   // bumped version to force update
+const CACHE_DYNAMIC = "bwm-dynamic-v5";
 
 const STATIC_ASSETS = [
   "./",
@@ -33,23 +33,23 @@ self.addEventListener("fetch", event => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // API requests – Google Apps Script
+  // 🔥 BYPASS service worker for non‑GET requests (e.g., POST)
+  // This prevents any caching or interception that could cause network errors.
+  if (req.method !== "GET") {
+    return;  // do not call respondWith – browser handles normally
+  }
+
+  // API requests – Google Apps Script (GET only)
   if (url.hostname === "script.google.com") {
-    // GET: network first, fallback to cache
-    if (req.method === "GET") {
-      event.respondWith(
-        fetch(req)
-          .then(res => {
-            const cloned = res.clone();
-            caches.open(CACHE_DYNAMIC).then(cache => cache.put(req, cloned));
-            return res;
-          })
-          .catch(() => caches.match(req))
-      );
-      return;
-    }
-    // POST (and others): network only – do NOT attempt to cache
-    event.respondWith(fetch(req));
+    event.respondWith(
+      fetch(req)
+        .then(res => {
+          const cloned = res.clone();
+          caches.open(CACHE_DYNAMIC).then(cache => cache.put(req, cloned));
+          return res;
+        })
+        .catch(() => caches.match(req))
+    );
     return;
   }
 
