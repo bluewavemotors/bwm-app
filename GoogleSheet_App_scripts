@@ -105,64 +105,25 @@ const SHARE_EXPIRY_DAYS = 7;
 // =============================================================================
 // doGet(e) — main entry point for all GET requests
 // =============================================================================
-function doGet(e) {
+if (e.parameter.share) {
 
-  // ── Handle ?share=SHARE_ID (snapshot lookup) ────────────────────────────────
-  if (e.parameter && e.parameter.share) {
-    return handleShareLookup(e.parameter.share);
+  const cache = CacheService.getScriptCache();
+  const data  = cache.get(e.parameter.share);
+
+  if (!data) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ error: "expired" }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 
-  // ── Handle normal inventory fetch ──────────────────────────────────────────
-  try {
-    const ss        = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet     = ss.getSheetByName(INVENTORY_SHEET);
+  const parsed = JSON.parse(data);
 
-    if (!sheet) {
-      return jsonResponse({ error: 'Inventory sheet not found' });
-    }
-
-    const rows        = sheet.getDataRange().getValues();
-    const lastUpdated = sheet.getLastUpdated
-      ? sheet.getLastUpdated().toISOString()
-      : new Date().toISOString();
-
-    const cars = [];
-
-    // Row 0 is the header row — skip it
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-
-      // Skip completely empty rows
-      if (!row[COL_BRAND] && !row[COL_MODEL]) continue;
-
-      cars.push({
-        id       : row[COL_ID]        || i,
-        brand    : String(row[COL_BRAND]    || "").trim(),
-        model    : String(row[COL_MODEL]    || "").trim(),
-        variant  : String(row[COL_VARIANT]  || "").trim(),
-        year     : String(row[COL_YEAR]     || "").trim(),
-        fuel     : String(row[COL_FUEL]     || "").trim(),
-        km       : String(row[COL_KM]       || "").trim(),
-        owner    : String(row[COL_OWNER]    || "").trim(),
-        color    : String(row[COL_COLOR]    || "").trim(),
-        idv      : String(row[COL_IDV]      || "").trim(),
-        tpExpiry : formatSheetDate(row[COL_TP_EXPIRY]),
-        odExpiry : formatSheetDate(row[COL_OD_EXPIRY]),
-        price    : String(row[COL_PRICE]    || "").trim(),
-        showroom : toBool(row[COL_SHOWROOM]),
-        booked   : toBool(row[COL_BOOKED]),
-        images   : String(row[COL_IMAGES]   || "").trim(),
-      });
-    }
-
-    return jsonResponse({
-      lastUpdated : lastUpdated,
-      cars        : cars,
-    });
-
-  } catch (err) {
-    return jsonResponse({ error: err.toString() });
-  }
+  return ContentService
+    .createTextOutput(JSON.stringify({
+      car: parsed.car,
+      images: parsed.images
+    }))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 
@@ -170,41 +131,54 @@ function doGet(e) {
 // doPost(e) — called when app creates a share snapshot
 // =============================================================================
 function doPost(e) {
+
   try {
+
     const data = JSON.parse(e.postData.contents);
 
-    if (data.action === 'createShare') {
-      const ss          = SpreadsheetApp.getActiveSpreadsheet();
-      const sharesSheet = ss.getSheetByName(SHARES_SHEET) || ss.insertSheet(SHARES_SHEET);
+    if (data.action === "createShare") {
 
-      // Write header row if sheet was just created
-      if (sharesSheet.getLastRow() === 0) {
-        sharesSheet.appendRow(['shareId', 'carData', 'expiry', 'images', 'createdAt']);
-        sharesSheet.setFrozenRows(1);
+      const car    = data.car;
+      const images = data.images || [];
+
+      if (!car || !car.id) {
+        throw new Error("Invalid car data");
       }
 
-      // Generate a short unique 12-character ID
-      const shareId = Utilities.getUuid().replace(/-/g, '').substring(0, 12);
+      // 🔥 Generate unique shareId
+      const shareId = Utilities.getUuid();
 
-      // Set expiry
-      const expiry = new Date();
-      expiry.setDate(expiry.getDate() + SHARE_EXPIRY_DAYS);
+      // 🔥 Store in Cache (fast, expires)
+      const cache = CacheService.getScriptCache();
 
-      sharesSheet.appendRow([
-        shareId,
-        JSON.stringify(data.car),
-        expiry.toISOString(),
-        JSON.stringify(data.images || []),
-        new Date().toISOString(),
-      ]);
+      const payload = JSON.stringify({
+        car: car,
+        images: images,
+        created: new Date().toISOString()
+      });
 
-      return jsonResponse({ shareId: shareId });
+      // ⏳ Store for 6 hours (21600 sec)
+      cache.put(shareId, payload, 21600);
+
+      return ContentService
+        .createTextOutput(JSON.stringify({
+          success: true,
+          shareId: shareId
+        }))
+        .setMimeType(ContentService.MimeType.JSON);
     }
 
-    return jsonResponse({ error: 'unknown_action' });
+    return ContentService
+      .createTextOutput(JSON.stringify({ error: "Invalid action" }))
+      .setMimeType(ContentService.MimeType.JSON);
 
   } catch (err) {
-    return jsonResponse({ error: err.toString() });
+
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        error: err.message
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 

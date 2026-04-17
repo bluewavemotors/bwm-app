@@ -564,27 +564,22 @@ async function shareCar(id) {
 
   try {
 
-    const imgs = Array.isArray(car.images)
-      ? car.images
-      : (car.images ? car.images.split(",").map(i => i.trim()) : []);
+    const imgs = Array.isArray(car.images) ? car.images : [];
 
     const selectedImgs = selectedImages.length > 0
       ? selectedImages.map(i => imgs[i]).filter(Boolean)
       : imgs.slice(0, 3);
 
-    const response = await fetch(API_URL, {
-      method: "POST",
-      redirect: "follow",
-      cache: "no-store",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        action: "createShare",
-        car: car,
-        images: selectedImgs
-      })
-    });
+    // 🔥 SEND VIA GET (NO CORS ISSUE)
+    const payload = encodeURIComponent(JSON.stringify({
+      action: "createShare",
+      car: car,
+      images: selectedImgs
+    }));
 
-    if (!response.ok) throw new Error("Server error");
+    const response = await fetch(`${API_URL}?data=${payload}`, {
+      method: "GET"
+    });
 
     const result = await response.json();
 
@@ -603,7 +598,6 @@ async function shareCar(id) {
 
 _Blue Wave Motors, Thrissur_`;
 
-    // ✅ USE SINGLE SHARE ENGINE
     await shareOnWhatsApp({
       text: message,
       url: ""
@@ -612,7 +606,6 @@ _Blue Wave Motors, Thrissur_`;
   } catch (err) {
 
     console.error("shareCar error:", err);
-
     alert("❌ Failed to share. Please try again.");
 
   } finally {
