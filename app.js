@@ -63,12 +63,20 @@ async function shareOnWhatsApp({ text, url }) {
 
   const message = text + " " + url;
 
+  // 1. Native share (mobile best)
   if (navigator.share) {
     try {
       await navigator.share({ text, url });
       return { success: true, method: 'native' };
     } catch (err) {}
   }
+
+  // 2. WhatsApp Web fallback
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  window.open(waUrl, "_blank");
+
+  return { success: true, method: 'wa-web' };
+}
 
   const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
   window.open(waUrl, "_blank");
@@ -598,7 +606,7 @@ _Blue Wave Motors, Thrissur_`;
     // ✅ USE SINGLE SHARE ENGINE
     await shareOnWhatsApp({
       text: message,
-      url: shareUrl.href
+      url: ""
     });
 
   } catch (err) {
