@@ -61,98 +61,22 @@ async function copyToClipboard(text) {
 // Main share function: prefer Web Share API, then wa.me, then whatsapp://, then clipboard
 async function shareOnWhatsApp({ text, url }) {
 
-  const message = text + " " + url;
+  const message = url ? `${text} ${url}` : text;
 
-  // 1. Native share (mobile best)
+  // Native share (mobile)
   if (navigator.share) {
     try {
-      await navigator.share({ text, url });
+      await navigator.share({ text: message, url: "" });
       return { success: true, method: 'native' };
     } catch (err) {}
   }
 
-  // 2. WhatsApp Web fallback
+  // WhatsApp Web fallback
   const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
   window.open(waUrl, "_blank");
 
   return { success: true, method: 'wa-web' };
 }
-
-  const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-  window.open(waUrl, "_blank");
-
-  return { success: true, method: 'wa-web' };
-}
-
-  // fallback
-  window.open(`https://wa.me/?text=${encodeURIComponent(text + " " + url)}`, "_blank");
-  }
-
-  // 2) Try opening wa.me in a new tab/window (user gesture required)
-  // This is the most reliable cross-platform fallback for mobile browsers.
-  const newWin = window.open(waWeb, '_blank');
-
-  // 3) Try to open native app scheme as a last resort, using iframe + visibility trick
-  // Only attempt if on mobile (optional but recommended)
-  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (isMobile) {
-    let handled = false;
-    const onVisibility = () => { handled = document.hidden; };
-    document.addEventListener('visibilitychange', onVisibility);
-
-    // Use iframe to attempt app scheme without navigating away
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = waApp;
-    document.body.appendChild(iframe);
-
-    // Cleanup after short timeout
-    await new Promise(resolve => setTimeout(resolve, 800));
-    document.removeEventListener('visibilitychange', onVisibility);
-    try { document.body.removeChild(iframe); } catch (e) {}
-    if (handled) return { success: true, method: 'whatsapp-app' };
-  }
-
-  // 4) If newWin was blocked or nothing handled, fallback to copying link
-  if (!newWin) {
-    // open in same tab as last resort (but avoid if you don't want to navigate away)
-    try { window.location.href = waWeb; return { success: true, method: 'wa-web-redirect' }; }
-    catch (e) { /* ignore */ }
-  }
-
-  // 5) Clipboard fallback
-  const copied = await copyToClipboard(message);
-  if (copied) return { success: true, method: 'clipboard' };
-
-  // final failure
-  showToast('Could not open WhatsApp. Please copy the link manually.');
-  return { success: false };
-}
-
-// Hook up the button (example)
-document.addEventListener('DOMContentLoaded', () => {
-  const btn = document.getElementById('shareWhatsApp');
-  if (!btn) return;
-  btn.addEventListener('click', async (e) => {
-    // Build the share text and URL from your app state
-    // Example: share the current car detail page
-    const title = document.querySelector('.car-title')?.textContent?.trim() || 'Check this car';
-    const price = document.querySelector('.price')?.textContent?.trim() || '';
-    const pageUrl = window.location.href;
-
-    const text = `${title} ${price}`.trim();
-    // Call share function (must be inside user gesture)
-    const result = await shareOnWhatsApp({ text, url: pageUrl });
-
-    // Optional: analytics or UI feedback
-    if (result.success) {
-      console.log('Shared via', result.method);
-      if (result.method === 'clipboard') showToast('Share text copied — paste into WhatsApp');
-    } else {
-      console.warn('Share failed');
-    }
-  });
-});
 
 
 // ─── PRICE HELPERS ────────────────────────────────────────────────────────────
