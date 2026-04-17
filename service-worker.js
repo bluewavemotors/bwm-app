@@ -41,15 +41,7 @@ self.addEventListener("fetch", event => {
 
   // API requests – Google Apps Script (GET only)
   if (url.hostname === "script.google.com") {
-    event.respondWith(
-      fetch(req)
-        .then(res => {
-          const cloned = res.clone();
-          caches.open(CACHE_DYNAMIC).then(cache => cache.put(req, cloned));
-          return res;
-        })
-        .catch(() => caches.match(req))
-    );
+    event.respondWith(fetch(req)); // 🔥 NO CACHE
     return;
   }
 

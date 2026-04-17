@@ -60,20 +60,24 @@ async function copyToClipboard(text) {
 
 // Main share function: prefer Web Share API, then wa.me, then whatsapp://, then clipboard
 async function shareOnWhatsApp({ text, url }) {
-  // Build message
-  const message = url ? `${text}\n\n${url}` : text;
-  const encoded = encodeURIComponent(message);
-  const waWeb = `https://wa.me/?text=${encoded}`;
-  const waApp = `whatsapp://send?text=${encoded}`;
 
-  // 1) Web Share API (native share sheet)
+  const message = text + " " + url;
+
   if (navigator.share) {
     try {
-      await navigator.share({ text: message, url });
-      return { success: true, method: 'web-share' };
-    } catch (err) {
-      // user cancelled or failed — fall through to web fallback
-    }
+      await navigator.share({ text, url });
+      return { success: true, method: 'native' };
+    } catch (err) {}
+  }
+
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  window.open(waUrl, "_blank");
+
+  return { success: true, method: 'wa-web' };
+}
+
+  // fallback
+  window.open(`https://wa.me/?text=${encodeURIComponent(text + " " + url)}`, "_blank");
   }
 
   // 2) Try opening wa.me in a new tab/window (user gesture required)
@@ -218,18 +222,30 @@ async function loadCars() {
     loadingDiv.style.display = "block";
     loadingDiv.innerHTML = '<span class="loader"></span> Loading cars...';
 
-    const response = await fetch(API_URL + "?t=" + new Date().getTime());
+    const response = await fetch(API_URL, { cache: "no-store" });
     const result   = await response.json();
 
-    carsData = (result?.cars || []).map(sanitizeCar);
+    if (!Array.isArray(result?.cars)) {
+      throw new Error("Invalid API response");
+    }
+
+    carsData = result.cars.map(sanitizeCar);
 
     // Cache after load
     localStorage.setItem("carsCache", JSON.stringify(carsData));
 
     loadingDiv.style.display = "none";
-    lastUpdatedDiv.innerText = "Last updated: " + formatDateTime(new Date().toISOString());
+    lastUpdatedDiv.innerText = "Last updated: " + formatDateTime(result.lastUpdated || new Date());
+
+    // Restore filters
+    const savedFilters = JSON.parse(localStorage.getItem("bwm_filters") || "{}");
+
+    document.getElementById("search").value = savedFilters.search || "";
+    document.getElementById("showroomOnly").checked = savedFilters.showroomOnly || false;
+    document.getElementById("budgetFilter").value = savedFilters.budget || "";
 
     checkCarParam();
+    updateClearButton();
 
   } catch (error) {
     const cached = localStorage.getItem("carsCache");
@@ -263,19 +279,23 @@ function showError(message, retryFn) {
 
 function sanitizeCar(car) {
   return {
-    id:       car.id || "",
-    brand:    (car.brand    || "").toString(),
-    model:    (car.model    || "").toString(),
-    variant:  (car.variant  || "").toString(),
-    color:    (car.color    || "").toString(),
-    fuel:     (car.fuel     || "").toString(),
-    year:     (car.year     || "").toString(),
-    owner:    (car.owner    || "").toString(),
+    id: car.id || "",
+    brand: (car.brand || "").toString(),
+    model: (car.model || "").toString(),
+    variant: (car.variant || "").toString(),
+    color: (car.color || "").toString(),
+    fuel: (car.fuel || "").toString(),
+    year: (car.year || "").toString(),
+    owner: (car.owner || "").toString(),
     showroom: car.showroom === true || car.showroom === "TRUE",
-    booked:   car.booked   === true || car.booked   === "TRUE",
-    price:    car.price || 0,
-    km:       Number(car.km) || 0,
-    images:   car.images || ""
+    booked: car.booked === true || car.booked === "TRUE",
+    price: car.price || 0,
+    km: Number(car.km) || 0,
+
+    // ✅ FIXED HERE
+    images: Array.isArray(car.images)
+      ? car.images
+      : (car.images ? car.images.split(",").map(i => i.trim()) : [])
   };
 }
 
@@ -387,10 +407,12 @@ function displayCars(cars) {
     return;
   }
 
+  let html = "";
+
   cars.forEach(car => {
 
-    const firstImage = car.images
-      ? car.images.split(",").map(i => i.trim()).find(i => i.startsWith("http"))
+    const firstImage = car.images && car.images.length > 0
+      ? car.images[0]
       : "";
 
     let statusClass = "yellow";
@@ -400,12 +422,13 @@ function displayCars(cars) {
       statusClass = "green";
       statusText  = "Available";
     }
+
     if (car.booked) {
       statusClass = "grey";
       statusText  = "Booked";
     }
 
-    list.innerHTML += `
+    html += `
       <div class="car-card" onclick="showDetails('${car.id}')">
         ${firstImage
           ? `<img src="${getOptimizedImage(firstImage, 400)}" class="car-image" loading="lazy">`
@@ -421,6 +444,8 @@ function displayCars(cars) {
       </div>
     `;
   });
+
+  list.innerHTML = html;
 }
 
 // ─── DETAIL VIEW ──────────────────────────────────────────────────────────────
@@ -435,11 +460,8 @@ function showDetails(id) {
 
   let imagesHTML = "";
 
-  if (car.images && car.images.trim() !== "") {
-    const imgs = car.images
-      .split(",")
-      .map(i => i.trim())
-      .filter(i => i.startsWith("http"));
+  if (car.images && car.images.length > 0) {
+    const imgs = car.images || [];
 
     if (imgs.length > 0) {
       imagesHTML = `
@@ -520,28 +542,32 @@ function toggleSelect(index) {
 }
 
 // ─── SHARE ────────────────────────────────────────────────────────────────────
-// ─── SHARE ────────────────────────────────────────────────────────────────────
 async function shareCar(id) {
+
   const car = carsData.find(c => c.id == id);
   if (!car) return;
 
   const btn = document.getElementById("shareBtn");
+
   if (btn) {
     btn.disabled = true;
     btn.textContent = "⏳ Creating link...";
   }
 
-  const imgs = car.images ? car.images.split(",").map(i => i.trim()).filter(Boolean) : [];
-
-  const selectedImgs = selectedImages.length > 0
-    ? selectedImages.map(i => imgs[i]).filter(Boolean)
-    : imgs.slice(0, 3);
-
   try {
+
+    const imgs = Array.isArray(car.images)
+      ? car.images
+      : (car.images ? car.images.split(",").map(i => i.trim()) : []);
+
+    const selectedImgs = selectedImages.length > 0
+      ? selectedImages.map(i => imgs[i]).filter(Boolean)
+      : imgs.slice(0, 3);
+
     const response = await fetch(API_URL, {
       method: "POST",
       redirect: "follow",
-      cache: "no-store",                 // ✅ Prevents any caching interference
+      cache: "no-store",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
         action: "createShare",
@@ -550,36 +576,39 @@ async function shareCar(id) {
       })
     });
 
-    if (!response.ok) {
-      throw new Error(`Server responded with ${response.status}`);
-    }
+    if (!response.ok) throw new Error("Server error");
 
     const result = await response.json();
 
-    if (!result?.shareId) {
-      throw new Error("Share ID missing in response");
-    }
+    if (!result?.shareId) throw new Error("Invalid share response");
 
-    // Build the share URL
     const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, "");
     const shareUrl = new URL("share.html", base);
     shareUrl.searchParams.set("id", result.shareId);
 
     const message =
-`*${car.brand} ${car.model}*
+`*${car.brand} ${car.model} ${car.variant || ""}*
 
-${shareUrl.href}
+💰 ${formatPriceShort(car.price)}
 
-Price: ${formatPriceShort(car.price)}
+🔗 ${shareUrl.href}
 
-_Blue Wave Motors_`;
+_Blue Wave Motors, Thrissur_`;
 
-    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+    // ✅ USE SINGLE SHARE ENGINE
+    await shareOnWhatsApp({
+      text: message,
+      url: shareUrl.href
+    });
 
   } catch (err) {
+
     console.error("shareCar error:", err);
-    alert("❌ Failed to create share link. Please check your connection and try again.");
+
+    alert("❌ Failed to share. Please try again.");
+
   } finally {
+
     if (btn) {
       btn.disabled = false;
       btn.textContent = "📤 Share on WhatsApp";
