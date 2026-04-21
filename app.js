@@ -111,7 +111,7 @@ function formatPriceShort(price) {
   if (!num || isNaN(num)) return price;
   const round2 = v => Math.round(v * 100) / 100;
   if (num >= 10000000) return "₹ " + round2(num / 10000000).toFixed(2) + " Cr";
-  if (num >= 100000)   return "₹ " + round2(num / 100000).toFixed(2) + " L";
+  if (num >= 100000)   return "₹ " + round2(num / 100000).toFixed(2) + " Lk";
   return "₹ " + num.toLocaleString('en-IN');
 }
 
@@ -119,7 +119,7 @@ function formatPrice(price) {
   const n = parsePrice(price);
   if (!n || isNaN(n)) return price;
   if (n >= 10000000) return '₹ ' + (n / 10000000).toFixed(2) + ' Cr';
-  if (n >= 100000)   return '₹ ' + (n / 100000).toFixed(2) + ' L';
+  if (n >= 100000)   return '₹ ' + (n / 100000).toFixed(2) + ' Lk';
   return '₹ ' + n.toLocaleString('en-IN');
 }
 
