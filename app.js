@@ -88,12 +88,21 @@ function formatIndianNumber(price) {
 
 function parsePrice(price) {
   if (!price) return 0;
-  let text = price.toString().toLowerCase();
+
+  let text = price.toString().toLowerCase().trim();
+
+  // Remove commas first
+  text = text.replace(/,/g, '');
+
+  // Extract number
   let match = text.match(/[\d.]+/);
   if (!match) return 0;
+
   let number = parseFloat(match[0]);
+
   if (text.includes("crore")) return number * 10000000;
-  if (text.includes("lakh"))  return number * 100000;
+  if (text.includes("lakh") || text.includes("l")) return number * 100000;
+
   return number;
 }
 
@@ -222,7 +231,7 @@ function sanitizeCar(car) {
     showroom: car.showroom === true || car.showroom === "TRUE",
     booked: car.booked === true || car.booked === "TRUE",
     price: car.price || 0,
-    km: Number(car.km) || 0,
+    km: parseInt((car.km || "").toString().replace(/,/g, '').trim()) || 0,
 
     // ✅ FIXED HERE
     images: Array.isArray(car.images)
