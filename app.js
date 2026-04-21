@@ -356,17 +356,15 @@ function displayCars(cars) {
       ? car.images[0]
       : "";
 
-    let statusClass = "yellow";
-    let statusText  = "Yard / Incoming";
-
-    if (car.showroom && !car.booked) {
-      statusClass = "green";
-      statusText  = "Available";
-    }
-
     if (car.booked) {
       statusClass = "red";
       statusText  = "Booked";
+    } else if (car.showroom) {
+      statusClass = "green";
+      statusText  = "Available";
+    } else {
+      statusClass = "yellow";
+      statusText  = "Yard / Incoming";
     }
 
     html += `
