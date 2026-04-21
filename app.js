@@ -356,16 +356,15 @@ function displayCars(cars) {
       ? car.images[0]
       : "";
 
-    if (car.booked) {
-      statusClass = "red";
-      statusText  = "Booked";
-    } else if (car.showroom) {
-      statusClass = "green";
-      statusText  = "Available";
-    } else {
-      statusClass = "yellow";
-      statusText  = "Yard / Incoming";
-    }
+    let statusClass = "";
+    let statusText  = "";
+
+    let statusClass = car.showroom ? "green" : "yellow";
+    let statusText  = car.showroom ? "Available" : "Yard / Incoming";
+
+    let bookedBadge = car.booked
+      ? `<span class="status red" style="margin-left:6px;">Booked</span>`
+      : "";
 
     html += `
       <div class="car-card" onclick="showDetails('${car.id}')">
@@ -378,7 +377,10 @@ function displayCars(cars) {
         <div>${car.year || "-"} | ${car.fuel || "-"} | ${car.km || 0} km</div>
         <div class="price-status-row">
           <div class="price">${formatPriceShort(car.price)}</div>
-          <div class="status ${statusClass}">${statusText}</div>
+          <div>
+            <span class="status ${statusClass}">${statusText}</span>
+            ${bookedBadge}
+          </div>
         </div>
       </div>
     `;
