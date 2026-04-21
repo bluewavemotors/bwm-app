@@ -365,7 +365,7 @@ function displayCars(cars) {
     }
 
     if (car.booked) {
-      statusClass = "grey";
+      statusClass = "red";
       statusText  = "Booked";
     }
 
