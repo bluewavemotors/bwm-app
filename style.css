@@ -73,6 +73,10 @@ html {
 .green  { background: #d4edda; }
 .yellow { background: #fff3cd; }
 .grey   { background: #e2e3e5; }
+.red {
+  background: #f8d7da;
+  color: #721c24;
+}
 
 .header-top {
   display: flex;
