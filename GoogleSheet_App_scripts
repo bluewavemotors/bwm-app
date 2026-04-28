@@ -2,161 +2,118 @@
 // =============================================================================
 // BWM INVENTORY — Google Apps Script
 // =============================================================================
-// version date 2026-04-13
-// BWM-App main script
+// version date 2026-04-27
+/**
+ * Google Sheet "To-Share" column structure and our indexing in this API:
+Index	Column Name
+0 =	SL NO
+1	= REG NO
+2	= BRAND
+3	= MODEL
+4	= VARIANT
+5	= PRICE
+6	= COLOR
+7	= YEAR
+8	= FUEL
+9	= MILEAGE
+10	= OWNER
+11	= Ins TP Expiry
+12	= Ins OD Expiry
+13	= IDV
+14	= In Showroom (Yes/No)
+15	= IMAGES (link)
+ */
 
-
-/** To populate Car image urls in column IMAGES in "Stock" sheet */
-function updateAllCarImages() {
-
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Stock");
-  const data = sheet.getDataRange().getValues();
-
-  const headers = data[0];
-  const regIndex = headers.indexOf("REG NO");
-  const imgIndex = headers.indexOf("IMAGES");
-
-  const mainFolder = DriveApp.getFolderById("1JpBc422Oz7ywO7j1P_hX3TUyjS0f8rua");
-
-  for (let i = 1; i < data.length; i++) {
-
-    const regNo = data[i][regIndex];
-
-    if (!regNo || regNo.toString().trim() === "") continue;
-
-    const cleanReg = regNo.toString().replace(/\s|-/g, "").toUpperCase();
-
-    if (!cleanReg) continue;
-
-    const folders = mainFolder.getFoldersByName(cleanReg);
-    if (!folders.hasNext()) continue;
-
-    const carFolder = folders.next();
-    const files = carFolder.getFiles();
-
-    let images = [];
-
-    while (files.hasNext()) {
-      const file = files.next();
-      images.push(`https://lh3.googleusercontent.com/d/${file.getId()}=w400`);
-    }
-
-    sheet.getRange(i + 1, imgIndex + 1).setValue(images.join(","));
-  }
-
-  try {
-    SpreadsheetApp.getUi().alert("✅ Images updated successfully!");
-  } catch (e) {
-    Logger.log("✅ Images updated successfully!");
-  }
-}
-
-// SHEET SETUP:
-//   Sheet 1 name : "Stock"  (your car data)
-//   Sheet 2 name : "Shares"     (auto-created on first share)
-//
-// INVENTORY SHEET — expected column order (A to Q):
-//   A  = ID
-//   B  = Brand
-//   C  = Model
-//   D  = Variant
-//   E  = Year
-//   F  = Fuel
-//   G  = KM (mileage)
-//   H  = Owner (number of owners)
-//   I  = Color
-//   J  = IDV
-//   K  = TP Expiry
-//   L  = OD Expiry
-//   M  = Price
-//   N  = Showroom  (TRUE / FALSE)
-//   O  = Booked    (TRUE / FALSE)
-//   P  = Images    (comma-separated Google Drive file IDs)
-//
-// If your columns are in a different order, update the COL_* constants below.
-// =============================================================================
-
-// ── COLUMN INDEX MAP (0-based) ────────────────────────────────────────────────
-const COL_ID        = 0;   // A
-const COL_BRAND     = 1;   // B
-const COL_MODEL     = 2;   // C
-const COL_VARIANT   = 3;   // D
-const COL_YEAR      = 4;   // E
-const COL_FUEL      = 5;   // F
-const COL_KM        = 6;   // G
-const COL_OWNER     = 7;   // H
-const COL_COLOR     = 8;   // I
-const COL_IDV       = 9;   // J
-const COL_TP_EXPIRY = 10;  // K
-const COL_OD_EXPIRY = 11;  // L
-const COL_PRICE     = 12;  // M
-const COL_SHOWROOM  = 13;  // N
-const COL_BOOKED    = 14;  // O
-const COL_IMAGES    = 15;  // P
-
-// ── SHEET NAMES ───────────────────────────────────────────────────────────────
-const INVENTORY_SHEET = "Stock";
-const SHARES_SHEET    = "Shares";
-
-// ── SHARE EXPIRY (days) ───────────────────────────────────────────────────────
+const INVENTORY_SHEET   = "To-Share";
+const SHARES_SHEET      = "Shares";
 const SHARE_EXPIRY_DAYS = 7;
 
+// Column mapping (0-based)
+/** const COL = {
+  ID: 0, BRAND: 1, MODEL: 2, VARIANT: 3, YEAR: 4, FUEL: 5,
+  KM: 6, OWNER: 7, COLOR: 8, IDV: 9, TP_EXPIRY: 10,
+  OD_EXPIRY: 11, PRICE: 12, SHOWROOM: 13, BOOKED: 14, IMAGES: 15
+}; */
+const COL = {
+  ID: 1,            // REG NO
+  BRAND: 2,         // AUDI
+  MODEL: 3,         // A3
+  VARIANT: 4,       // S LINE
+  PRICE: 5,         // 11.9 Lakh
+  COLOR: 6,         // WHITE
+  YEAR: 7,          // 2015
+  FUEL: 8,          // Diesel
+  KM: 9,            // 73400
+  OWNER: 10,        // 3
+  TP_EXPIRY: 11,
+  OD_EXPIRY: 12,
+  IDV: 13,
+  SHOWROOM: 14,
+  IMAGES: 15
+};
+
 
 // =============================================================================
-// doGet(e) — main entry point for all GET requests
+// doGet(e) — main entry point
 // =============================================================================
 function doGet(e) {
 
-  // 🔥 1. CREATE SHARE (GET - replaces POST, avoids CORS)
+  // 1. CREATE SHARE via GET (avoids CORS)
   if (e.parameter && e.parameter.data) {
+    try {
+      const data = JSON.parse(decodeURIComponent(e.parameter.data));
 
-    const data = JSON.parse(decodeURIComponent(e.parameter.data));
+      if (data.action === "createShare") {
+        // Generate short unique ID
+        const shareId = Utilities.getUuid().substring(0, 8);
+        
+        // 🔥 USE PROPERTIES SERVICE (more reliable than Cache)
+        const props = PropertiesService.getScriptProperties();
+        
+        props.setProperty('share_' + shareId, JSON.stringify({
+          car: data.car,
+          images: data.images,
+          expiry: new Date().getTime() + (SHARE_EXPIRY_DAYS * 24 * 60 * 60 * 1000)
+        }));
 
-    if (data.action === "createShare") {
+        return jsonResponse({ success: true, shareId: shareId });
+      }
+    } catch (err) {
+      return jsonResponse({ error: 'createShare failed: ' + err.toString() });
+    }
+  }
 
-      const shareId = Utilities.getUuid();
+  // 2. FETCH SHARE (for share.html?share=XXXX)
+  if (e.parameter && e.parameter.share) {
+    try {
+      const props = PropertiesService.getScriptProperties();
+      const key   = 'share_' + e.parameter.share;
+      const raw   = props.getProperty(key);
 
-      const cache = CacheService.getScriptCache();
+      if (!raw) {
+        return jsonResponse({ error: "expired" });
+      }
 
-      cache.put(shareId, JSON.stringify({
+      const data = JSON.parse(raw);
+
+      // Check expiry
+      if (new Date().getTime() > data.expiry) {
+        props.deleteProperty(key); // cleanup
+        return jsonResponse({ error: "expired" });
+      }
+
+      return jsonResponse({
         car: data.car,
         images: data.images
-      }), 21600); // 6 hours
+      });
 
-      return ContentService
-        .createTextOutput(JSON.stringify({
-          success: true,
-          shareId: shareId
-        }))
-        .setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return jsonResponse({ error: 'fetchShare failed: ' + err.toString() });
     }
   }
 
-  // 🔥 2. FETCH SHARE (for share.html?id=XXXX)
-  if (e.parameter && e.parameter.share) {
-
-    const cache = CacheService.getScriptCache();
-    const data  = cache.get(e.parameter.share);
-
-    if (!data) {
-      return ContentService
-        .createTextOutput(JSON.stringify({ error: "expired" }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    const parsed = JSON.parse(data);
-
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        car: parsed.car,
-        images: parsed.images
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-
-  // 🔥 3. NORMAL INVENTORY FETCH
+  // 3. NORMAL INVENTORY FETCH
   try {
-
     const ss    = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(INVENTORY_SHEET);
 
@@ -165,44 +122,42 @@ function doGet(e) {
     }
 
     const rows = sheet.getDataRange().getValues();
-
-    const lastUpdated = new Date().toISOString(); // safer than getLastUpdated()
-
     const cars = [];
 
     for (let i = 1; i < rows.length; i++) {
-
       const row = rows[i];
+      if (!row[COL.BRAND] && !row[COL.MODEL]) continue;
 
-      if (!row[COL_BRAND] && !row[COL_MODEL]) continue;
-
+      const showroomRaw = String(row[COL.SHOWROOM] || "").toLowerCase().trim();
+      const showroom = showroomRaw.startsWith("yes");
+      const booked   = showroomRaw.includes("booked");
+      
       cars.push({
-        id       : row[COL_ID]        || i,
-        brand    : String(row[COL_BRAND]    || "").trim(),
-        model    : String(row[COL_MODEL]    || "").trim(),
-        variant  : String(row[COL_VARIANT]  || "").trim(),
-        year     : String(row[COL_YEAR]     || "").trim(),
-        fuel     : String(row[COL_FUEL]     || "").trim(),
-        km       : String(row[COL_KM]       || "").trim(),
-        owner    : String(row[COL_OWNER]    || "").trim(),
-        color    : String(row[COL_COLOR]    || "").trim(),
-        idv      : String(row[COL_IDV]      || "").trim(),
-        tpExpiry : formatSheetDate(row[COL_TP_EXPIRY]),
-        odExpiry : formatSheetDate(row[COL_OD_EXPIRY]),
-        price    : String(row[COL_PRICE]    || "").trim(),
-        showroom : toBool(row[COL_SHOWROOM]),
-        booked   : toBool(row[COL_BOOKED]),
-        images   : String(row[COL_IMAGES]   || "").trim(),
+        id: row[COL.ID] || i,
+        brand: String(row[COL.BRAND] || "").trim(),
+        model: String(row[COL.MODEL] || "").trim(),
+        variant: String(row[COL.VARIANT] || "").trim(),
+        year: String(row[COL.YEAR] || "").trim(),
+        fuel: String(row[COL.FUEL] || "").trim(),
+        km: Number(String(row[COL.KM]).replace(/,/g, '').trim()) || 0,
+        owner: String(row[COL.OWNER] || "").trim(),
+        color: String(row[COL.COLOR] || "").trim(),
+        idv: String(row[COL.IDV] || "").trim(),
+        tpExpiry: formatSheetDate(row[COL.TP_EXPIRY]),
+        odExpiry: formatSheetDate(row[COL.OD_EXPIRY]),
+        price: String(row[COL.PRICE] || "").trim(),
+        showroom : showroom,
+        booked   : booked,
+        images: String(row[COL.IMAGES] || "").trim(),
       });
     }
 
     return jsonResponse({
-      lastUpdated : lastUpdated,
-      cars        : cars,
+      lastUpdated: new Date().toISOString(),
+      cars: cars,
     });
 
   } catch (err) {
-
     return jsonResponse({ error: err.toString() });
   }
 }
@@ -303,27 +258,102 @@ function jsonResponse(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// Converts sheet cell to boolean
-// Accepts: TRUE/FALSE (checkbox), "yes"/"no", 1/0
 function toBool(value) {
   if (typeof value === 'boolean') return value;
-  if (typeof value === 'string')  return value.toLowerCase() === 'true' || value.toLowerCase() === 'yes';
-  if (typeof value === 'number')  return value === 1;
+
+  if (typeof value === 'string') {
+    const v = value.toLowerCase().trim();
+    return v === 'true' || v === 'yes' || v === 'y';
+  }
   return false;
 }
 
-// Formats a date cell safely — returns empty string if blank
 function formatSheetDate(value) {
   if (!value) return "";
   try {
     const d = new Date(value);
     if (isNaN(d.getTime())) return String(value);
-    const day   = String(d.getDate()).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
     const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year  = d.getFullYear();
+    const year = d.getFullYear();
     return `${day}/${month}/${year}`;
   } catch (e) {
     return String(value);
   }
 }
+
+
+// =============================================================================
+// HELPER FUNCTION: Clean up expired shares (run manually or on trigger)
+// =============================================================================
+function cleanupExpiredShares() {
+  const props = PropertiesService.getScriptProperties();
+  const all = props.getProperties();
+  let deleted = 0;
+  
+  for (const key in all) {
+    if (!key.startsWith('share_')) continue;
+    
+    try {
+      const data = JSON.parse(all[key]);
+      if (new Date().getTime() > data.expiry) {
+        props.deleteProperty(key);
+        deleted++;
+      }
+    } catch (e) {
+      // corrupted data, delete it
+      props.deleteProperty(key);
+      deleted++;
+    }
+  }
+  
+  Logger.log(`Cleaned up ${deleted} expired shares`);
+}
+
+
+/** To populate Car image urls in column IMAGES in "Stock" sheet */
+function updateAllCarImages() {
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Stock");
+  const data = sheet.getDataRange().getValues();
+
+  const headers = data[0];
+  const regIndex = headers.indexOf("REG NO");
+  const imgIndex = headers.indexOf("IMAGES");
+
+  const mainFolder = DriveApp.getFolderById("1JpBc422Oz7ywO7j1P_hX3TUyjS0f8rua");
+
+  for (let i = 1; i < data.length; i++) {
+
+    const regNo = data[i][regIndex];
+
+    if (!regNo || regNo.toString().trim() === "") continue;
+
+    const cleanReg = regNo.toString().replace(/\s|-/g, "").toUpperCase();
+
+    if (!cleanReg) continue;
+
+    const folders = mainFolder.getFoldersByName(cleanReg);
+    if (!folders.hasNext()) continue;
+
+    const carFolder = folders.next();
+    const files = carFolder.getFiles();
+
+    let images = [];
+
+    while (files.hasNext()) {
+      const file = files.next();
+      images.push(`https://lh3.googleusercontent.com/d/${file.getId()}=w400`);
+    }
+
+    sheet.getRange(i + 1, imgIndex + 1).setValue(images.join(","));
+  }
+
+  try {
+    SpreadsheetApp.getUi().alert("✅ Images updated successfully!");
+  } catch (e) {
+    Logger.log("✅ Images updated successfully!");
+  }
+}
 /** BWM-App scripts-------------------------------------<end>*/
+// =*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=.
