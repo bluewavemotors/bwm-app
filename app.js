@@ -195,6 +195,7 @@ async function loadCars() {
     updateClearButton();
 
   } catch (error) {
+    console.error("LOAD ERROR:", error);
     const cached = localStorage.getItem("carsCache");
     if (cached) {
       carsData = JSON.parse(cached);
@@ -451,8 +452,16 @@ function showDetails(id) {
 
 function getOptimizedImage(url, size = 800) {
   if (!url) return "";
+
+  // ✅ If already Google optimized image (your current case)
+  if (url.includes("googleusercontent.com")) {
+    return url;
+  }
+
+  // ✅ Handle normal Google Drive links
   const match = url.match(/[-\w]{25,}/);
   if (!match) return url;
+
   return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w${size}`;
 }
 
