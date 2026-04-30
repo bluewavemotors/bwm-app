@@ -155,47 +155,66 @@ function updateClearButton() {
 
 // ─── LOAD CARS ────────────────────────────────────────────────────────────────
 async function loadCars() {
-  const loadingDiv    = document.getElementById("loading");
+  const loadingDiv     = document.getElementById("loading");
   const lastUpdatedDiv = document.getElementById("lastUpdated");
 
   try {
+    // 🔄 Show loading
     loadingDiv.style.display = "block";
     loadingDiv.innerHTML = '<span class="loader"></span> Loading cars...';
-    
+
+    // 🌐 API call (WITH KEY)
     const response = await fetch(API_URL + "?key=BWM@2026", { cache: "no-store" });
     const result   = await response.json();
 
-    if (!Array.isArray(result?.cars)) {
-      throw new Error("Invalid API response");
+    // 🔴 Handle API-level errors
+    if (result.error) {
+      throw new Error(result.error);
     }
 
+    // 🟡 Safety check (don’t force offline unnecessarily)
+    if (!Array.isArray(result?.cars)) {
+      console.warn("Cars missing in API response");
+      result.cars = [];
+    }
+
+    // ✅ Store data
     carsData = result.cars.map(sanitizeCar);
 
-    // Cache after load
+    // 💾 Cache data
     localStorage.setItem("carsCache", JSON.stringify(carsData));
 
+    // ✅ Hide loading
     loadingDiv.style.display = "none";
-    lastUpdatedDiv.innerText = "Last updated: " + formatDateTime(result.lastUpdated || new Date());
 
-    // Restore filters
+    // 🕒 Last updated
+    lastUpdatedDiv.innerText =
+      "Last updated: " + formatDateTime(result.lastUpdated || new Date());
+
+    // 🔁 Restore filters
     const savedFilters = JSON.parse(localStorage.getItem("bwm_filters") || "{}");
 
-    document.getElementById("search").value = savedFilters.search || "";
+    document.getElementById("search").value        = savedFilters.search || "";
     document.getElementById("showroomOnly").checked = savedFilters.showroomOnly || false;
-    document.getElementById("budgetFilter").value = savedFilters.budget || "";
+    document.getElementById("budgetFilter").value   = savedFilters.budget || "";
 
+    // 🚗 Render
     checkCarParam();
     updateClearButton();
 
   } catch (error) {
     console.error("LOAD ERROR:", error);
+
     const cached = localStorage.getItem("carsCache");
-    if (cached) {
+
+    // ⚠️ Show offline ONLY if no live data
+    if (cached && (!carsData || carsData.length === 0)) {
       carsData = JSON.parse(cached);
       checkCarParam();
+
       showError("⚠️ Offline mode (cached data)", loadCars);
     } else {
-      showError("❌ No data available", loadCars);
+      console.warn("Using existing data, no offline message shown");
     }
   }
 }
