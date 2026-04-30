@@ -1,5 +1,5 @@
 const API_URL = 
-"https://script.google.com/macros/s/AKfycbwwE7Vh-aojmNafegOxlHAZhbqbBW9YRZI6LpjE3oAxPb70zRfKvci3CyxfkafGLF75/exec"
+"https://script.google.com/macros/s/AKfycbz8hbybFJOHB2Wn9tSdU-xsS7M7hCo5b2Rpljqs4us0MNvCVF4-Agx1PK7aTVHx-l2k/exec"
 let carsData = [];
 let selectedImages = [];
 
@@ -156,6 +156,13 @@ function updateClearButton() {
 
 // ─── LOAD CARS ────────────────────────────────────────────────────────────────
 async function loadCars() {
+  /** temp */
+  const response = await fetch(API_URL, { cache: "no-store" });
+  console.log("STATUS:", response.status);
+  const result = await response.json();
+  console.log("API RESULT:", result);
+  /** temp */
+
   const loadingDiv    = document.getElementById("loading");
   const lastUpdatedDiv = document.getElementById("lastUpdated");
 
