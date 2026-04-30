@@ -27,6 +27,8 @@ Index	Column Name
 const INVENTORY_SHEET   = "To-Share";
 const SHARES_SHEET      = "Shares";
 const SHARE_EXPIRY_DAYS = 7;
+const API_KEY = "BWM@2026";
+
 
 // Column mapping (0-based)
 /** const COL = {
@@ -57,6 +59,10 @@ const COL = {
 // doGet(e) — main entry point
 // =============================================================================
 function doGet(e) {
+  // 🔐 API protection
+  if (!e.parameter.key || e.parameter.key !== API_KEY) {
+    return jsonResponse({ error: "Unauthorized" });
+  }
 
   // 1. CREATE SHARE via GET (avoids CORS)
   if (e.parameter && e.parameter.data) {
@@ -114,7 +120,7 @@ function doGet(e) {
 
   // 3. NORMAL INVENTORY FETCH
   try {
-    const ss    = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = SpreadsheetApp.openById("1NZeIOEcm9nvOXrzn2H8LzXzzVjn4Q2AUgIGsvW-h_2Y");
     const sheet = ss.getSheetByName(INVENTORY_SHEET);
 
     if (!sheet) {
@@ -171,7 +177,7 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
 
     if (data.action === 'createShare') {
-      const ss          = SpreadsheetApp.getActiveSpreadsheet();
+      const ss = SpreadsheetApp.openById("1NZeIOEcm9nvOXrzn2H8LzXzzVjn4Q2AUgIGsvW-h_2Y");
       const sharesSheet = ss.getSheetByName(SHARES_SHEET) || ss.insertSheet(SHARES_SHEET);
 
       // Write header row if sheet was just created
@@ -213,7 +219,7 @@ function doPost(e) {
 // =============================================================================
 function handleShareLookup(shareId) {
   try {
-    const ss          = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = SpreadsheetApp.openById("1NZeIOEcm9nvOXrzn2H8LzXzzVjn4Q2AUgIGsvW-h_2Y");
     const sharesSheet = ss.getSheetByName(SHARES_SHEET);
 
     if (!sharesSheet) {
@@ -313,8 +319,8 @@ function cleanupExpiredShares() {
 
 /** To populate Car image urls in column IMAGES in "Stock" sheet */
 function updateAllCarImages() {
-
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Stock");
+  const ss = SpreadsheetApp.openById("1NZeIOEcm9nvOXrzn2H8LzXzzVjn4Q2AUgIGsvW-h_2Y");
+  const sheet = ss.getSheetByName("Stock");
   const data = sheet.getDataRange().getValues();
 
   const headers = data[0];
@@ -357,3 +363,206 @@ function updateAllCarImages() {
 }
 /** BWM-App scripts-------------------------------------<end>*/
 // =*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=.
+
+
+function goToLastRow() {
+  const sheet = SpreadsheetApp.getActiveSheet();
+  sheet.getRange(sheet.getLastRow(), 1).activate();
+}
+
+
+/**
+ * Convert number to words in Indian Rupees
+ *
+ * @param {number} input The value to convert.
+ * @return The number in lakhs and crores.
+ * @customfunction
+ */
+function INR(input) {
+  const rupees = Number(parseInt(input, 10));
+  const output = [];
+
+  if (rupees === 0) {
+    output.push('zero');
+  } else if (rupees === 1) {
+    output.push('one');
+  } else {
+    const crores = (rupees / 10000000);
+    if (crores >= 1){
+      output.push(crores + ` cr`);
+    } else {
+      const lakhs = (rupees / 100000);
+      if (lakhs > 0) {
+        output.push(lakhs + ` lakhs`);
+      }
+    }
+  }
+
+  return [...output]
+    .join(' ')
+    .split(/\s/)
+    .filter((e) => e)
+    .map((e) => e.substr(0, 1).toUpperCase() + e.substr(1))
+    .join(' ');
+}
+
+function INRWords(input) {
+  const rupees = Number(parseInt(input, 10));
+  const output = [];
+
+  if (rupees === 0) {
+    output.push('zero');
+  } else if (rupees === 1) {
+    output.push('one');
+  } else {
+    const crores = Math.floor(rupees / 10000000) % 100;
+    if (crores == 1) {
+      output.push(`${getHundreds(crores)} crore`);
+    } else if (crores > 1){
+      output.push(`${getHundreds(crores)} crores`);
+    } 
+    
+    const lakhs = Math.floor(rupees / 100000) % 100;
+    if (lakhs == 1) {
+      output.push(`${getHundreds(lakhs)} lakh`);
+    } else if (lakhs > 0) {
+      output.push(`${getHundreds(lakhs)} lakhs`);
+    }
+
+    const thousands = Math.floor(rupees / 1000) % 100;
+    if (thousands > 0) {
+      output.push(`${getHundreds(thousands)} thousand`);
+    }
+
+    const hundreds = Math.floor((rupees % 1000) / 100);
+    if (hundreds > 0 && hundreds < 10) {
+      output.push(`${getOnes(hundreds)} hundred`);
+    }
+
+    const tens = rupees % 100;
+    if (tens > 0) {
+      if (rupees > 100) output.push('and');
+      output.push(`${getHundreds(tens)}`);
+    }
+  }
+
+  //return ['Rupees', ...output, 'only']
+  return [...output]
+    .join(' ')
+    .split(/\s/)
+    .filter((e) => e)
+    .map((e) => e.substr(0, 1).toUpperCase() + e.substr(1))
+    .join(' ');
+}
+
+function getOnes(number) {
+  const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+  return ones[number] || '';
+}
+
+function getTeens(number) {
+  const teens = [
+    'ten',
+    'eleven',
+    'twelve',
+    'thirteen',
+    'fourteen',
+    'fifteen',
+    'sixteen',
+    'seventeen',
+    'eighteen',
+    'nineteen',
+  ];
+  return teens[number] || '';
+}
+
+function getTens(number) {
+  const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+  return tens[number] || '';
+}
+
+function getHundreds(num) {
+  if (num > 0 && num < 10) {
+    return getOnes(num);
+  }
+  if (num >= 10 && num < 20) {
+    return getTeens(num % 10);
+  }
+  if (num >= 20 && num < 100) {
+    return `${getTens(Math.floor(num / 10))} ${getOnes(num % 10)}`;
+  }
+  return '';
+}
+
+function onEdit(e) {
+    const activeSheet = e.source.getActiveSheet();
+    const range = e.range;
+    Logger.log("sheet is : " +activeSheet.getName());
+    // Check if the edit occurred in the specified sheet and column
+    if (activeSheet.getName() == "TripLog" && e.range.getColumn() == 4) {
+      var regex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/;
+      var value = e.value.toString();
+      
+      if (!regex.test(value)) {
+        var cell = activeSheet.getRange(range.getRow(), range.getColumn());
+        cell.setBackgroundColor("#f4cccc"); // Red background
+        cell.setFontColor("#660000"); // White font color
+      } else {
+        var cell = activeSheet.getRange(range.getRow(), range.getColumn());
+        cell.setBackgroundColor(null); // Red background
+        cell.setFontColor(null); // White font color
+      }
+    } else if (activeSheet.getName() == "DailyLog" && range.getColumn() == 10) {
+      const sheetName = "DailyLog"; // Hardcoded sheet name
+      const dateCol = 1; // Column A (date)
+      const carCol = 2; // Column B (car)
+      const mileageCol = 10; // Column C (mileage)
+
+      const sheet = range.getSheet();
+
+      // Exit if not our target sheet or column
+      if (sheet.getName() !== sheetName || range.getColumn() !== mileageCol) return;
+
+      const editedRow = range.getRow();
+      const data = sheet.getDataRange().getValues();
+      const currentRecord = data[editedRow-1]; // 0-based index
+      
+      // Get all records for this car (including current)
+      const carRecords = data
+        .map((row, index) => ({row, index}))
+        .filter(({row}) => row[carCol-1] === currentRecord[carCol-1]);
+
+      // Sort records by date
+      carRecords.sort((a, b) => new Date(a.row[dateCol-1]) - new Date(b.row[dateCol-1]));
+
+      // Find current record position in sorted list
+      const currentIndex = carRecords.findIndex(r => r.index === editedRow-1);
+      
+      // Get previous and next records
+      const previousRecord = carRecords[currentIndex-1];
+      const nextRecord = carRecords[currentIndex+1];
+
+      // Get ranges to format
+      const currentRange = sheet.getRange(editedRow, mileageCol);
+      const previousRange = previousRecord ? sheet.getRange(previousRecord.index+1, mileageCol) : null;
+      const nextRange = nextRecord ? sheet.getRange(nextRecord.index+1, mileageCol) : null;
+
+      // Check and format current cell
+      const currentChanged = previousRecord ? 
+        currentRecord[mileageCol-1] !== previousRecord.row[mileageCol-1] : false;
+      currentRange.setBackground(currentChanged ? "yellow" : null);
+
+      // Check and format next cell
+      if(nextRecord) {
+        const nextChanged = currentRecord[mileageCol-1] !== nextRecord.row[mileageCol-1];
+        nextRange.setBackground(nextChanged ? "yellow" : null);
+      }
+
+      // Update previous cell if exists
+      /*if(previousRecord) {
+        const prevChanged = previousRecord.row[mileageCol-1] !== currentRecord[mileageCol-1];
+        previousRange.setBackground(prevChanged ? "yellow" : null);
+      }*/
+    }
+}
+

@@ -155,21 +155,14 @@ function updateClearButton() {
 
 // ─── LOAD CARS ────────────────────────────────────────────────────────────────
 async function loadCars() {
-  /** temp */
-  const response = await fetch(API_URL + "?key=BWM@2026", { cache: "no-store" });
-  console.log("STATUS:", response.status);
-  const result = await response.json();
-  console.log("API RESULT:", result);
-  /** temp */
-
   const loadingDiv    = document.getElementById("loading");
   const lastUpdatedDiv = document.getElementById("lastUpdated");
 
   try {
     loadingDiv.style.display = "block";
     loadingDiv.innerHTML = '<span class="loader"></span> Loading cars...';
-
-    const response = await fetch(API_URL, { cache: "no-store" });
+    
+    const response = await fetch(API_URL + "?key=BWM@2026", { cache: "no-store" });
     const result   = await response.json();
 
     if (!Array.isArray(result?.cars)) {
@@ -268,7 +261,10 @@ async function loadSharedCar(shareId) {
   loadingDiv.innerHTML = '<span class="loader"></span> Loading shared car...';
 
   try {
-    const response = await fetch(API_URL + '?share=' + shareId + '&t=' + Date.now());
+    //const response = await fetch(API_URL + '?key=BWM@2026&share=' + shareId + '&t=' + Date.now());
+    const response = await fetch(
+      API_URL + '?key=BWM@2026&share=' + encodeURIComponent(shareId) + '&t=' + Date.now()
+      );
     const result   = await response.json();
     loadingDiv.style.display = "none";
 
