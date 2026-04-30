@@ -362,9 +362,6 @@ function displayCars(cars) {
       ? car.images[0]
       : "";
 
-    let statusClass = "";
-    let statusText  = "";
-
     let statusClass = car.showroom ? "green" : "yellow";
     let statusText  = car.showroom ? "Available" : "Yard / Incoming";
 
