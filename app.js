@@ -156,7 +156,7 @@ function updateClearButton() {
 // ─── LOAD CARS ────────────────────────────────────────────────────────────────
 async function loadCars() {
   /** temp */
-  const response = await fetch(API_URL, { cache: "no-store" });
+  const response = await fetch(API_URL + "?key=BWM@2026", { cache: "no-store" });
   console.log("STATUS:", response.status);
   const result = await response.json();
   console.log("API RESULT:", result);
@@ -522,7 +522,7 @@ async function shareCar(id) {
       images: selectedImgs
     }));
 
-    const response = await fetch(`${API_URL}?data=${payload}`, {
+    const response = await fetch(`${API_URL}?key=BWM@2026&data=${payload}`, {
       method: "GET"
     });
 

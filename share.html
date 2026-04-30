@@ -139,8 +139,9 @@ async function loadShare() {
   }
 
   try {
-    const res  = await fetch(API + "?share=" + encodeURIComponent(shareId) + "&t=" + Date.now());
-    const data = await res.json();
+    const res = await fetch(
+      API + "?key=BWM@2026&share=" + encodeURIComponent(shareId) + "&t=" + Date.now()
+    );    const data = await res.json();
 
     // Expiry and error states are handled server-side by GAS
     if (data.error === "expired") {
