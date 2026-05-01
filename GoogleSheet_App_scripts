@@ -26,6 +26,7 @@ Index	Column Name
 
 const INVENTORY_SHEET   = "To-Share";
 const SHARES_SHEET      = "Shares";
+const SHEET_ID = "1NZeIOEcm9nvOXrzn2H8LzXzzVjn4Q2AUgIGsvW-h_2Y";
 const SHARE_EXPIRY_DAYS = 7;
 const API_KEY = "BWM@2026";
 
@@ -59,108 +60,146 @@ const COL = {
 // doGet(e) — main entry point
 // =============================================================================
 function doGet(e) {
-  // 🔐 API protection
+
+  // 🔐 API KEY CHECK
   if (!e.parameter.key || e.parameter.key !== API_KEY) {
     return jsonResponse({ error: "Unauthorized" });
   }
 
-  // 1. CREATE SHARE via GET (avoids CORS)
-  if (e.parameter && e.parameter.data) {
+  // =========================================================
+  // 1. CREATE SHARE
+  // =========================================================
+  if (e.parameter.data) {
     try {
       const data = JSON.parse(decodeURIComponent(e.parameter.data));
 
-      if (data.action === "createShare") {
-        // Generate short unique ID
+      // ✅ STRICT CHECK
+      if (data.action === "createShare" && data.carId) {
+
         const shareId = Utilities.getUuid().substring(0, 8);
-        
-        // 🔥 USE PROPERTIES SERVICE (more reliable than Cache)
+
         const props = PropertiesService.getScriptProperties();
-        
+
         props.setProperty('share_' + shareId, JSON.stringify({
-          car: data.car,
-          images: data.images,
-          expiry: new Date().getTime() + (SHARE_EXPIRY_DAYS * 24 * 60 * 60 * 1000)
+          carId: data.carId,
+          expiry: new Date().getTime() + (SHARE_EXPIRY_DAYS * 86400000)
         }));
 
         return jsonResponse({ success: true, shareId: shareId });
       }
-    } catch (err) {
-      return jsonResponse({ error: 'createShare failed: ' + err.toString() });
-    }
-  }
 
-  // 2. FETCH SHARE (for share.html?share=XXXX)
-  if (e.parameter && e.parameter.share) {
-    try {
-      const props = PropertiesService.getScriptProperties();
-      const key   = 'share_' + e.parameter.share;
-      const raw   = props.getProperty(key);
-
-      if (!raw) {
-        return jsonResponse({ error: "expired" });
-      }
-
-      const data = JSON.parse(raw);
-
-      // Check expiry
-      if (new Date().getTime() > data.expiry) {
-        props.deleteProperty(key); // cleanup
-        return jsonResponse({ error: "expired" });
-      }
-
+      // 🔴 IMPORTANT: always return something
       return jsonResponse({
-        car: data.car,
-        images: data.images
+        error: "Invalid action or missing carId",
+        received: data
       });
 
     } catch (err) {
-      return jsonResponse({ error: 'fetchShare failed: ' + err.toString() });
+      return jsonResponse({
+        error: "createShare failed",
+        details: err.toString()
+      });
     }
   }
 
-  // 3. NORMAL INVENTORY FETCH
-  try {
-    const ss = SpreadsheetApp.openById("1NZeIOEcm9nvOXrzn2H8LzXzzVjn4Q2AUgIGsvW-h_2Y");
-    const sheet = ss.getSheetByName(INVENTORY_SHEET);
+  // =========================================================
+  // 2. FETCH SHARE
+  // =========================================================
+  if (e.parameter.share) {
+    try {
+      const props = PropertiesService.getScriptProperties();
+      const raw = props.getProperty('share_' + e.parameter.share);
 
-    if (!sheet) {
-      return jsonResponse({ error: 'Inventory sheet not found' });
+      if (!raw) return jsonResponse({ error: "not_found" });
+
+      const data = JSON.parse(raw);
+
+      if (new Date().getTime() > data.expiry) {
+        props.deleteProperty('share_' + e.parameter.share);
+        return jsonResponse({ error: "expired" });
+      }
+
+      const carId = data.carId;
+
+      // 🔥 Fetch latest data from sheet
+      const ss = SpreadsheetApp.openById(SHEET_ID);
+      const sheet = ss.getSheetByName(INVENTORY_SHEET);
+      const rows = sheet.getDataRange().getValues();
+
+      let car = null;
+
+      for (let i = 1; i < rows.length; i++) {
+        if (String(rows[i][1]) === String(carId)) {
+          car = {
+            id: rows[i][1],
+            brand: rows[i][2],
+            model: rows[i][3],
+            variant: rows[i][4],
+            price: rows[i][5],
+            color: rows[i][6],
+            year: rows[i][7],
+            fuel: rows[i][8],
+            km: rows[i][9],
+            owner: rows[i][10],
+            tpExpiry: formatSheetDate(rows[i][11]),
+            odExpiry: formatSheetDate(rows[i][12]),
+            idv: rows[i][13],
+            showroom: String(rows[i][14]).toLowerCase().includes("yes"),
+            images: rows[i][15]
+          };
+          break;
+        }
+      }
+
+      if (!car) return jsonResponse({ error: "not_found" });
+
+      return jsonResponse({
+        car: car,
+        images: car.images ? car.images.split(",") : []
+      });
+
+    } catch (err) {
+      return jsonResponse({ error: "fetchShare failed: " + err });
     }
+  }
+
+  // =========================================================
+  // 3. NORMAL INVENTORY
+  // =========================================================
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = ss.getSheetByName(INVENTORY_SHEET);
 
     const rows = sheet.getDataRange().getValues();
     const cars = [];
 
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      if (!row[COL.BRAND] && !row[COL.MODEL]) continue;
 
-      const showroomRaw = String(row[COL.SHOWROOM] || "").toLowerCase().trim();
-      const showroom = showroomRaw.startsWith("yes");
-      const booked   = showroomRaw.includes("booked");
-      
+      if (!row[2] && !row[3]) continue;
+
       cars.push({
-        id: row[COL.ID] || i,
-        brand: String(row[COL.BRAND] || "").trim(),
-        model: String(row[COL.MODEL] || "").trim(),
-        variant: String(row[COL.VARIANT] || "").trim(),
-        year: String(row[COL.YEAR] || "").trim(),
-        fuel: String(row[COL.FUEL] || "").trim(),
-        km: Number(String(row[COL.KM]).replace(/,/g, '').trim()) || 0,
-        owner: String(row[COL.OWNER] || "").trim(),
-        color: String(row[COL.COLOR] || "").trim(),
-        idv: String(row[COL.IDV] || "").trim(),
-        tpExpiry: formatSheetDate(row[COL.TP_EXPIRY]),
-        odExpiry: formatSheetDate(row[COL.OD_EXPIRY]),
-        price: String(row[COL.PRICE] || "").trim(),
-        showroom : showroom,
-        booked   : booked,
-        images: String(row[COL.IMAGES] || "").trim(),
+        id: row[1],
+        brand: row[2],
+        model: row[3],
+        variant: row[4],
+        price: row[5],
+        color: row[6],
+        year: row[7],
+        fuel: row[8],
+        km: row[9],
+        owner: row[10],
+        tpExpiry: formatSheetDate(row[11]),
+        odExpiry: formatSheetDate(row[12]),
+        idv: row[13],
+        showroom: String(row[14]).toLowerCase().includes("yes"),
+        images: row[15] || ""
       });
     }
 
     return jsonResponse({
       lastUpdated: new Date().toISOString(),
-      cars: cars,
+      cars: cars
     });
 
   } catch (err) {
@@ -168,95 +207,9 @@ function doGet(e) {
   }
 }
 
-
-// =============================================================================
-// doPost(e) — called when app creates a share snapshot
-// =============================================================================
-function doPost(e) {
-  try {
-    const data = JSON.parse(e.postData.contents);
-
-    if (data.action === 'createShare') {
-      const ss = SpreadsheetApp.openById("1NZeIOEcm9nvOXrzn2H8LzXzzVjn4Q2AUgIGsvW-h_2Y");
-      const sharesSheet = ss.getSheetByName(SHARES_SHEET) || ss.insertSheet(SHARES_SHEET);
-
-      // Write header row if sheet was just created
-      if (sharesSheet.getLastRow() === 0) {
-        sharesSheet.appendRow(['shareId', 'carData', 'expiry', 'images', 'createdAt']);
-        sharesSheet.setFrozenRows(1);
-      }
-
-      // Generate a short unique 12-character ID
-      const shareId = Utilities.getUuid().replace(/-/g, '').substring(0, 12);
-
-      // Set expiry
-      const expiry = new Date();
-      expiry.setDate(expiry.getDate() + SHARE_EXPIRY_DAYS);
-
-      sharesSheet.appendRow([
-        shareId,
-        JSON.stringify(data.car),
-        expiry.toISOString(),
-        JSON.stringify(data.images || []),
-        new Date().toISOString(),
-      ]);
-
-      return ContentService
-        .createTextOutput(JSON.stringify({ shareId: shareId }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    return jsonResponse({ error: 'unknown_action' });
-
-  } catch (err) {
-    return jsonResponse({ error: err.toString() });
-  }
-}
-
-
-// =============================================================================
-// handleShareLookup(shareId) — finds and returns a saved snapshot
-// =============================================================================
-function handleShareLookup(shareId) {
-  try {
-    const ss = SpreadsheetApp.openById("1NZeIOEcm9nvOXrzn2H8LzXzzVjn4Q2AUgIGsvW-h_2Y");
-    const sharesSheet = ss.getSheetByName(SHARES_SHEET);
-
-    if (!sharesSheet) {
-      return jsonResponse({ error: 'not_found' });
-    }
-
-    const rows = sharesSheet.getDataRange().getValues();
-
-    // Row 0 is the header — skip it
-    for (let i = 1; i < rows.length; i++) {
-      if (rows[i][0] !== shareId) continue;
-
-      const expiry = new Date(rows[i][2]);
-
-      if (expiry < new Date()) {
-        return jsonResponse({ error: 'expired' });
-      }
-
-      return jsonResponse({
-        type   : 'share',
-        car    : JSON.parse(rows[i][1]),
-        images : JSON.parse(rows[i][3] || '[]'),
-      });
-    }
-
-    return jsonResponse({ error: 'not_found' });
-
-  } catch (err) {
-    return jsonResponse({ error: err.toString() });
-  }
-}
-
-
-// =============================================================================
+// =========================================================
 // HELPERS
-// =============================================================================
-
+// =========================================================
 // Wraps any object as a JSON HTTP response
 function jsonResponse(obj) {
   return ContentService
@@ -264,27 +217,14 @@ function jsonResponse(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function toBool(value) {
-  if (typeof value === 'boolean') return value;
-
-  if (typeof value === 'string') {
-    const v = value.toLowerCase().trim();
-    return v === 'true' || v === 'yes' || v === 'y';
-  }
-  return false;
-}
-
 function formatSheetDate(value) {
   if (!value) return "";
   try {
     const d = new Date(value);
-    if (isNaN(d.getTime())) return String(value);
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
-  } catch (e) {
-    return String(value);
+    if (isNaN(d)) return value;
+    return Utilities.formatDate(d, Session.getScriptTimeZone(), "dd/MM/yyyy");
+  } catch {
+    return value;
   }
 }
 
