@@ -511,68 +511,54 @@ function toggleSelect(index) {
 
 // ─── SHARE ────────────────────────────────────────────────────────────────────
 async function shareCar(id) {
-
-  const car = carsData.find(c => c.id == id);
-  if (!car) return;
-
-  const btn = document.getElementById("shareBtn");
-
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = "⏳ Creating link...";
-  }
-
   try {
+    const btn = document.getElementById("shareBtn");
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = "⏳ Creating link...";
+    }
 
-    const imgs = Array.isArray(car.images) ? car.images : [];
-
-    const selectedImgs = selectedImages.length > 0
-      ? selectedImages.map(i => imgs[i]).filter(Boolean)
-      : imgs.slice(0, 3);
-
-    // 🔥 SEND VIA GET (NO CORS ISSUE)
+    // 🔹 send ONLY carId
     const payload = encodeURIComponent(JSON.stringify({
       action: "createShare",
-      car: car,
-      images: selectedImgs
+      carId: id
     }));
 
-    const response = await fetch(`${API_URL}?key=BWM@2026&data=${payload}`, {
-      method: "GET"
-    });
-
+    const response = await fetch(`${API_URL}?key=BWM@2026&data=${payload}`);
     const result = await response.json();
 
-    if (!result?.shareId) throw new Error("Invalid share response");
+    // ✅ DEBUG (keep this)
+    console.log("SHARE RESPONSE:", result);
 
-    const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, "");
+    // ✅ ERROR HANDLING (ONLY ONCE)
+    if (result.error) {
+      throw new Error(result.error);
+    }
+
+    if (!result.shareId) {
+      throw new Error("No shareId returned: " + JSON.stringify(result));
+    }
+
+    // 🔗 Create share URL
+    const base = window.location.href.includes("share.html")
+      ? window.location.href.split("share.html")[0]
+      : window.location.href;
+
     const shareUrl = new URL("share.html", base);
     shareUrl.searchParams.set("id", result.shareId);
 
-    const message =
-`*${car.brand} ${car.model} ${car.variant || ""}*
-
-💰 ${formatPriceShort(car.price)}
-
-🔗 ${shareUrl.href}
-
-_Blue Wave Motors, Thrissur_`;
-
-    await shareOnWhatsApp({
-      text: message,
-      url: ""
-    });
+    // 📱 Open WhatsApp
+    const msg = encodeURIComponent("Check this car:\n" + shareUrl.toString());
+    window.open("https://wa.me/?text=" + msg, "_blank");
 
   } catch (err) {
-
     console.error("shareCar error:", err);
     alert("❌ Failed to share. Please try again.");
-
   } finally {
-
+    const btn = document.getElementById("shareBtn");
     if (btn) {
       btn.disabled = false;
-      btn.textContent = "📤 Share on WhatsApp";
+      btn.innerText = "📤 Share";
     }
   }
 }
