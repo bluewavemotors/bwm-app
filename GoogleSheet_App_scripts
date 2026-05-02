@@ -82,6 +82,7 @@ function doGet(e) {
 
         props.setProperty('share_' + shareId, JSON.stringify({
           carId: data.carId,
+          images: data.images || [],
           expiry: new Date().getTime() + (SHARE_EXPIRY_DAYS * 86400000)
         }));
 
@@ -153,9 +154,13 @@ function doGet(e) {
 
       if (!car) return jsonResponse({ error: "not_found" });
 
+      const selectedImages = data.images && data.images.length
+        ? data.images
+        : (car.images ? car.images.split(",") : []);
+
       return jsonResponse({
         car: car,
-        images: car.images ? car.images.split(",") : []
+        images: selectedImages
       });
 
     } catch (err) {
@@ -505,4 +510,3 @@ function onEdit(e) {
       }*/
     }
 }
-
