@@ -518,10 +518,13 @@ async function shareCar(id) {
       btn.innerText = "⏳ Creating link...";
     }
 
-    // 🔹 send ONLY carId
+    // 🔹 send ONLY carId and selected images.
+    const selectedImages = getSelectedImages(); // your selection logic
+
     const payload = encodeURIComponent(JSON.stringify({
       action: "createShare",
-      carId: id
+      carId: id,
+      images: selectedImages
     }));
 
     const response = await fetch(`${API_URL}?key=BWM@2026&data=${payload}`);
