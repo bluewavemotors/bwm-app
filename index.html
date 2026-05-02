@@ -1,40 +1,35 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BWM Inventory</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#111111">
-</head>
 
-<div id="fullscreenViewer" class="fullscreen hidden">
-  <span class="close-btn" onclick="closeFullscreen()">✖</span>
-  <img id="fullscreenImg">
-</div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BWM Inventory</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111111">
+</head>
 
 <body>
 
-<div class="header">
-  
-  <div class="header-top">
-    <img src="logo.png" class="logo">
-    <h2>BWM Inventory</h2>
-  </div>
+    //FULL SCREEN + ZOOM
+    <div id="fullscreenViewer" class="fullscreen hidden">
+        <span class="close-btn" onclick="closeFullscreen()">✖</span>
+        <img id="fullscreenImg">
+    </div>
 
-  <!-- 🔍 Search with Clear Button -->
-  <div style="position:relative;">
-    <input
-      type="text"
-      id="search"
-      placeholder="Search brand, model, fuel, color..."
-      style="padding-right:35px;"
-    >
-    
-    <span id="clearBtn" 
-      onclick="clearSearch()" 
-      style="
+    <div class="header">
+
+        <div class="header-top">
+            <img src="logo.png" class="logo">
+            <h2>BWM Inventory</h2>
+        </div>
+
+        <!-- 🔍 Search with Clear Button -->
+        <div style="position:relative;">
+            <input type="text" id="search" placeholder="Search brand, model, fuel, color..." style="padding-right:35px;">
+
+            <span id="clearBtn" onclick="clearSearch()" style="
         position:absolute;
         right:10px;
         top:50%;
@@ -44,45 +39,44 @@
         color:#888;
         display:none;
         pointer-events: auto;
-      "
-    >✖</span>
-  </div>
+      ">✖</span>
+        </div>
 
-  <!-- ⚡ Quick Filters -->
-  <div class="quick-filters">
-    <button class="qf-btn" onclick="quickFilter('diesel')">⛽ Diesel</button>
-    <button class="qf-btn" onclick="quickFilter('petrol')">🔋 Petrol</button>
-    <button class="qf-btn" onclick="quickFilter('under20')">💰 Under 20L</button>
-    <button class="qf-btn" onclick="quickFilter('showroom')">🏢 Showroom</button>
-    <button class="qf-btn qf-clear" onclick="quickFilter('clear')">✖ Clear</button>
-  </div>
+        <!-- ⚡ Quick Filters -->
+        <div class="quick-filters">
+            <button class="qf-btn" onclick="quickFilter('diesel')">⛽ Diesel</button>
+            <button class="qf-btn" onclick="quickFilter('petrol')">🔋 Petrol</button>
+            <button class="qf-btn" onclick="quickFilter('under20')">💰 Under 20L</button>
+            <button class="qf-btn" onclick="quickFilter('showroom')">🏢 Showroom</button>
+            <button class="qf-btn qf-clear" onclick="quickFilter('clear')">✖ Clear</button>
+        </div>
 
-  <!-- ✅ Showroom Checkbox -->
-  <label class="filter-row">
-    <input type="checkbox" id="showroomOnly">
-    <span>Show In Showroom Only</span>
-  </label>
+        <!-- ✅ Showroom Checkbox -->
+        <label class="filter-row">
+            <input type="checkbox" id="showroomOnly">
+            <span>Show In Showroom Only</span>
+        </label>
 
-  <!-- 💰 Budget Filter -->
-  <select id="budgetFilter" class="dropdown">
-    <option value="">All Budgets</option>
-    <option value="1000000">Under 10 Lakhs</option>
-    <option value="2000000">Under 20 Lakhs</option>
-    <option value="3000000">Under 30 Lakhs</option>
-    <option value="5000000">Under 50 Lakhs</option>
-  </select>
+        <!-- 💰 Budget Filter -->
+        <select id="budgetFilter" class="dropdown">
+            <option value="">All Budgets</option>
+            <option value="1000000">Under 10 Lakhs</option>
+            <option value="2000000">Under 20 Lakhs</option>
+            <option value="3000000">Under 30 Lakhs</option>
+            <option value="5000000">Under 50 Lakhs</option>
+        </select>
 
-    <!-- 💰 Sort Filter -->
-  <select id="sortFilter">
-    <option value="">Sort By</option>
-    <option value="priceLow">Price Low → High</option>
-    <option value="priceHigh">Price High → Low</option>
-    <option value="kmLow">KM Low → High</option>
-    <option value="yearNew">Newest First</option>
-  </select>
+        <!-- 💰 Sort Filter -->
+        <select id="sortFilter">
+            <option value="">Sort By</option>
+            <option value="priceLow">Price Low → High</option>
+            <option value="priceHigh">Price High → Low</option>
+            <option value="kmLow">KM Low → High</option>
+            <option value="yearNew">Newest First</option>
+        </select>
 
-  <!-- 🔄 Refresh -->
-  <button onclick="loadCars()" style="
+        <!-- 🔄 Refresh -->
+        <button onclick="loadCars()" style="
     margin-top:8px;
     padding:6px 10px;
     border:none;
@@ -90,43 +84,37 @@
     background:#444;
     color:white;
   ">
-    🔄 Refresh
-  </button>
-</div>
+            🔄 Refresh
+        </button>
+    </div>
 
-<!-- ⏳ Loading -->
-<div id="loading" class="loading"></div>
+    <!-- ⏳ Loading -->
+    <div id="loading" class="loading"></div>
 
-<!-- 🕒 Last Updated -->
-<div id="lastUpdated"></div>
+    <!-- 🕒 Last Updated -->
+    <div id="lastUpdated"></div>
 
-<!-- 🚗 Cars List -->
-<div id="carList"></div>
+    <!-- 🚗 Cars List -->
+    <div id="carList"></div>
 
-<script src="app.js"></script>
+    <script src="app.js"></script>
 
-<!-- existing service worker registration -->
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js')
-      .then(() => console.log("Service Worker Registered"));
-  }
-</script>
+    <!-- existing service worker registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+              .then(() => console.log("Service Worker Registered"));
+          }
+    </script>
 
-<!-- 👇 Add this right below to force an immediate update check -->
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(registrations => {
-      registrations.forEach(reg => reg.update());
-    });
-  }
-</script>
-
-//FULL SCREEN + ZOOM
-<div id="fullscreenViewer" class="fullscreen hidden">
-  <span class="close-btn" onclick="closeFullscreen()">✖</span>
-  <img id="fullscreenImg">
-</div>
-
+    <!-- 👇 Add this right below to force an immediate update check -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+              registrations.forEach(reg => reg.update());
+            });
+          }
+    </script>
 </body>
+
 </html>

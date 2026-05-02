@@ -485,11 +485,12 @@ function showDetails(id) {
       <div class="image-slider">
         ${imgs.map((img, i) => `
           <div class="img-wrap" onclick="toggleSelect(${i})">
-            <img 
-              src="${getOptimizedImage(img)}" 
-              loading="lazy"
-              onclick="event.stopPropagation(); openFullscreen(${i})"
-            >
+              <img 
+                src="${getOptimizedImage(img)}"
+                id="img-view-${i}"
+                loading="lazy"
+                onclick="event.stopPropagation(); openFullscreen(${i})"
+              >
             <div class="img-check" id="img-${i}"></div>
           </div>
         `).join("")}
@@ -500,9 +501,10 @@ function showDetails(id) {
         <button onclick="nextImage()">➡</button>
       </div>
 
+      <div class="image-counter" id="imageCounter">1 / ${imgs.length}</div>
+
       <div class="img-hint">Tap images to select for sharing</div>
     `;
-    <div class="image-counter" id="imageCounter">1 / ${imgs.length}</div>
 
   } else {
     imagesHTML = `<div class="no-image">📷 No Images Available</div>`;
