@@ -2,6 +2,9 @@ const API_URL = "https://script.google.com/macros/s/AKfycbz8hbybFJOHB2Wn9tSdU-xs
 let carsData = [];
 let selectedImages = [];
 
+let currentImageIndex = 0;
+let currentImages = [];
+
 let deferredPrompt;
 
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -219,6 +222,29 @@ async function loadCars() {
   }
 }
 
+function scrollToImage(index) {
+  const slider = document.querySelector(".image-slider");
+  if (!slider) return;
+
+  const img = slider.children[index];
+  if (img) {
+    img.scrollIntoView({ behavior: "smooth", inline: "center" });
+  }
+}
+
+function nextImage() {
+  if (!currentImages.length) return;
+  currentImageIndex = (currentImageIndex + 1) % currentImages.length;
+  scrollToImage(currentImageIndex);
+}
+
+function prevImage() {
+  if (!currentImages.length) return;
+  currentImageIndex =
+    (currentImageIndex - 1 + currentImages.length) % currentImages.length;
+  scrollToImage(currentImageIndex);
+}
+
 function showError(message, retryFn) {
   const loadingDiv = document.getElementById("loading");
   if (!loadingDiv) return;
@@ -422,23 +448,33 @@ function showDetails(id) {
   let imagesHTML = "";
 
   if (car.images && car.images.length > 0) {
-    const imgs = car.images || [];
 
-    if (imgs.length > 0) {
-      imagesHTML = `
-        <div class="image-slider">
-          ${imgs.map((img, i) => `
-            <div class="img-wrap" onclick="toggleSelect(${i})">
-              <img src="${getOptimizedImage(img)}" loading="lazy" id="img-view-${i}">
-              <div class="img-check" id="img-${i}"></div>
-            </div>
-          `).join("")}
-        </div>
-        <div class="img-hint">Tap images to select for sharing</div>
-      `;
-    } else {
-      imagesHTML = `<div class="no-image">⚠️ No Valid Images</div>`;
-    }
+    const imgs = Array.isArray(car.images)
+      ? car.images
+      : car.images.split(",").map(s => s.trim()).filter(Boolean);
+
+    imagesHTML = `
+      <div class="image-slider">
+        ${imgs.map((img, i) => `
+          <div class="img-wrap" onclick="toggleSelect(${i})">
+            <img 
+              src="${getOptimizedImage(img)}" 
+              loading="lazy"
+              onclick="event.stopPropagation(); openFullscreen(${i})"
+            >
+            <div class="img-check" id="img-${i}"></div>
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="slider-controls">
+        <button onclick="prevImage()">⬅</button>
+        <button onclick="nextImage()">➡</button>
+      </div>
+
+      <div class="img-hint">Tap images to select for sharing</div>
+    `;
+
   } else {
     imagesHTML = `<div class="no-image">📷 No Images Available</div>`;
   }
@@ -446,6 +482,7 @@ function showDetails(id) {
   list.innerHTML = `
     <div class="car-detail-card">
       ${imagesHTML}
+
       <h3>${car.brand} ${car.model}</h3>
       <p><strong>Variant:</strong> ${car.variant || "-"}</p>
       <p><strong>Year:</strong> ${car.year || "-"}</p>
@@ -453,17 +490,29 @@ function showDetails(id) {
       <p><strong>Mileage:</strong> ${car.km || 0} km</p>
       <p><strong>Owners:</strong> ${car.owner || "-"}</p>
       <p><strong>Color:</strong> ${car.color || "-"}</p>
+
       <div class="price">₹ ${formatIndianNumber(car.price)}</div>
+
       <br>
+
       <button id="shareBtn" onclick="event.stopPropagation(); shareCar('${car.id}')">
         📤 Share on WhatsApp
       </button>
+
       <br><br>
+
       <button onclick="event.stopPropagation(); goBack()">
         ⬅ Back
       </button>
     </div>
   `;
+
+  // ✅ SAFE VERSION
+  currentImages = Array.isArray(car.images)
+    ? car.images
+    : car.images.split(",");
+
+  currentImageIndex = 0;
 }
 
 function getOptimizedImage(url, size = 800) {
