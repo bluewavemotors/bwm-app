@@ -229,6 +229,13 @@ function scrollToImage(index) {
   const img = slider.children[index];
   if (img) {
     img.scrollIntoView({ behavior: "smooth", inline: "center" });
+
+    // ✅ update counter
+    currentImageIndex = index;
+    const counter = document.getElementById("imageCounter");
+    if (counter) {
+      counter.innerText = `${index + 1} / ${currentImages.length}`;
+    }
   }
 }
 
@@ -243,6 +250,27 @@ function prevImage() {
   currentImageIndex =
     (currentImageIndex - 1 + currentImages.length) % currentImages.length;
   scrollToImage(currentImageIndex);
+}
+
+function enableSwipe() {
+  const slider = document.querySelector(".image-slider");
+  if (!slider) return;
+
+  let startX = 0;
+
+  slider.addEventListener("touchstart", (e) => {
+    startX = e.touches[0].clientX;
+  });
+
+  slider.addEventListener("touchend", (e) => {
+    let endX = e.changedTouches[0].clientX;
+
+    if (startX - endX > 50) {
+      nextImage();   // swipe left
+    } else if (endX - startX > 50) {
+      prevImage();   // swipe right
+    }
+  });
 }
 
 function showError(message, retryFn) {
@@ -474,6 +502,7 @@ function showDetails(id) {
 
       <div class="img-hint">Tap images to select for sharing</div>
     `;
+    <div class="image-counter" id="imageCounter">1 / ${imgs.length}</div>
 
   } else {
     imagesHTML = `<div class="no-image">📷 No Images Available</div>`;
@@ -513,6 +542,7 @@ function showDetails(id) {
     : car.images.split(",");
 
   currentImageIndex = 0;
+  enableSwipe();
 }
 
 function getOptimizedImage(url, size = 800) {
