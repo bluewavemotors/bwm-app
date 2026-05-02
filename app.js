@@ -411,6 +411,7 @@ function displayCars(cars) {
 // ─── DETAIL VIEW ──────────────────────────────────────────────────────────────
 function showDetails(id) {
   const car = carsData.find(c => c.id == id);
+  window.currentCarId = id;
   if (!car) return;
 
   const list = document.getElementById("carList");
@@ -518,31 +519,21 @@ async function shareCar(id) {
       btn.innerText = "⏳ Creating link...";
     }
 
-    // 🔹 send ONLY carId and selected images.
-    const selectedImages = getSelectedImages(); // your selection logic
-
+    const imagesToShare = getSelectedImages();
     const payload = encodeURIComponent(JSON.stringify({
       action: "createShare",
       carId: id,
-      images: selectedImages
+      images: imagesToShare
     }));
 
     const response = await fetch(`${API_URL}?key=BWM@2026&data=${payload}`);
     const result = await response.json();
 
-    // ✅ DEBUG (keep this)
     console.log("SHARE RESPONSE:", result);
 
-    // ✅ ERROR HANDLING (ONLY ONCE)
-    if (result.error) {
-      throw new Error(result.error);
-    }
+    if (result.error) throw new Error(result.error);
+    if (!result.shareId) throw new Error("No shareId returned");
 
-    if (!result.shareId) {
-      throw new Error("No shareId returned: " + JSON.stringify(result));
-    }
-
-    // 🔗 Create share URL
     const base = window.location.href.includes("share.html")
       ? window.location.href.split("share.html")[0]
       : window.location.href;
@@ -550,7 +541,6 @@ async function shareCar(id) {
     const shareUrl = new URL("share.html", base);
     shareUrl.searchParams.set("id", result.shareId);
 
-    // 📱 Open WhatsApp
     const msg = encodeURIComponent("Check this car:\n" + shareUrl.toString());
     window.open("https://wa.me/?text=" + msg, "_blank");
 
@@ -564,6 +554,13 @@ async function shareCar(id) {
       btn.innerText = "📤 Share";
     }
   }
+}
+
+function getSelectedImages() {
+  const car = carsData.find(c => c.id == window.currentCarId);
+  if (!car) return [];
+
+  return selectedImages.map(i => car.images[i]).filter(Boolean);
 }
 
 // ─── FILTERS ──────────────────────────────────────────────────────────────────
