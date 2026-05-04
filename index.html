@@ -11,9 +11,9 @@
 </head>
 
 <body>
-    <div id="fullscreenViewer" class="fullscreen hidden">
-        <span class="close-btn" onclick="closeFullscreen()">✖</span>
-        <img id="fullscreenImg">
+    <div id="fullscreenViewer" class="fullscreen hidden" onclick="closeFullscreen()">
+        <span class="close-btn" onclick="event.stopPropagation(); closeFullscreen()">✖</span>
+        <img id="fullscreenImg" onclick="event.stopPropagation()">
     </div>
 
     <div class="header">

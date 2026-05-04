@@ -464,6 +464,7 @@ function displayCars(cars) {
 
 // ─── DETAIL VIEW ──────────────────────────────────────────────────────────────
 function showDetails(id) {
+  history.pushState({ screen: "details", id: id }, "", "?car=" + id);
   const car = carsData.find(c => c.id == id);
   window.currentCarId = id;
   if (!car) return;
@@ -555,10 +556,12 @@ function openFullscreen(index) {
   viewer.classList.remove("hidden");
 
   let scale = 1;
-
   img.style.transform = "scale(1)";
 
-  // 🔥 pinch-like zoom (wheel + double tap)
+  // prevent bubbling
+  img.onclick = (e) => e.stopPropagation();
+
+  // zoom with wheel
   img.onwheel = (e) => {
     e.preventDefault();
     scale += e.deltaY * -0.001;
@@ -568,7 +571,7 @@ function openFullscreen(index) {
 
   // double tap zoom
   let lastTap = 0;
-  img.ontouchend = (e) => {
+  img.ontouchend = () => {
     const now = Date.now();
     if (now - lastTap < 300) {
       scale = scale === 1 ? 2 : 1;
@@ -576,6 +579,24 @@ function openFullscreen(index) {
     }
     lastTap = now;
   };
+
+  // ✅ history integration
+  history.pushState({ screen: "fullscreen" }, "");
+}
+
+function closeFullscreen() {
+  const viewer = document.getElementById("fullscreenViewer");
+  const img = document.getElementById("fullscreenImg");
+
+  // reset zoom
+  img.style.transform = "scale(1)";
+
+  // remove handlers (VERY IMPORTANT)
+  img.onwheel = null;
+  img.ontouchend = null;
+  img.onclick = null;
+
+  viewer.classList.add("hidden");
 }
 
 function getOptimizedImage(url, size = 800) {
@@ -747,4 +768,19 @@ window.addEventListener("DOMContentLoaded", function () {
   document.getElementById("sortFilter").addEventListener("change", applyFilters);
 
   loadCars();
+});
+
+window.addEventListener("popstate", function (event) {
+
+  // If fullscreen open → close it
+  const viewer = document.getElementById("fullscreenViewer");
+  if (viewer && !viewer.classList.contains("hidden")) {
+    closeFullscreen();
+    return;
+  }
+
+  // If coming from details → go back to list
+  if (!event.state || event.state.screen !== "details") {
+    loadCars();
+  }
 });
