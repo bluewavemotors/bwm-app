@@ -547,6 +547,37 @@ function showDetails(id) {
   enableSwipe();
 }
 
+function openFullscreen(index) {
+  const viewer = document.getElementById("fullscreenViewer");
+  const img = document.getElementById("fullscreenImg");
+
+  img.src = currentImages[index];
+  viewer.classList.remove("hidden");
+
+  let scale = 1;
+
+  img.style.transform = "scale(1)";
+
+  // 🔥 pinch-like zoom (wheel + double tap)
+  img.onwheel = (e) => {
+    e.preventDefault();
+    scale += e.deltaY * -0.001;
+    scale = Math.min(Math.max(1, scale), 3);
+    img.style.transform = `scale(${scale})`;
+  };
+
+  // double tap zoom
+  let lastTap = 0;
+  img.ontouchend = (e) => {
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      scale = scale === 1 ? 2 : 1;
+      img.style.transform = `scale(${scale})`;
+    }
+    lastTap = now;
+  };
+}
+
 function getOptimizedImage(url, size = 800) {
   if (!url) return "";
 
@@ -622,7 +653,17 @@ async function shareCar(id) {
     const shareUrl = new URL("share.html", base);
     shareUrl.searchParams.set("id", result.shareId);
 
-    const msg = encodeURIComponent("Check this car:\n" + shareUrl.toString());
+    const car = carsData.find(c => c.id == id);
+    const regDisplay = formatRegNo(car.id, "partial"); // change to full / hidden
+    const summary = `
+    🚗 ${car.brand} ${car.model}
+    🆔 ${regDisplay}
+    📅 ${car.year} | ⛽ ${car.fuel}
+    📍 ${car.km} km
+    💰 ___
+    `;
+
+    const msg = encodeURIComponent(summary + "\n🔗 " + shareUrl.toString());
     window.open("https://wa.me/?text=" + msg, "_blank");
 
   } catch (err) {
@@ -635,6 +676,18 @@ async function shareCar(id) {
       btn.innerText = "📤 Share";
     }
   }
+}
+
+function formatRegNo(reg, mode = "partial") {
+  if (!reg) return "";
+
+  if (mode === "full") return reg;
+
+  if (mode === "partial") {
+    return reg.substring(0, 4) + "****" + reg.slice(-2);
+  }
+
+  return ""; // hidden
 }
 
 function getSelectedImages() {
