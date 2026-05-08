@@ -434,30 +434,23 @@ body {
 
 .share-btn {
 
-  width:
-  54px;
-
-  height:
-  54px;
-
   border:
   none;
 
-  border-radius:
-  50%;
-
   background:
-  linear-gradient(
-    135deg,
-    var(--blue),
-    var(--blue2)
-  );
+  transparent;
 
-  color:
-  white;
+  padding:
+  0;
 
-  font-size:
-  20px;
+  display:
+  flex;
+
+  align-items:
+  center;
+
+  justify-content:
+  center;
 
 }
 
@@ -917,17 +910,5 @@ body {
   hue-rotate(89deg)
   brightness(97%)
   contrast(91%);
-
-}
-
-.insurance-line {
-
-  margin-top: 6px;
-
-  color:
-  #9fb0c8;
-
-  font-size:
-  13px;
 
 }

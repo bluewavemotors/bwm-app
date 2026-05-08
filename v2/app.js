@@ -173,7 +173,6 @@ function renderCars(cars) {
           </div>
 
           <div class="car-meta">
-
             <span>${car.year || '-'}</span>
 
             <span>•</span>
@@ -198,14 +197,14 @@ function renderCars(cars) {
               TP: ${car.tpExpiry || '-'}
             </span>
 
-            <div class="insurance-line">
-              OD:
-              ${car.odExpiry || '-'}
-            </div>
+            <span>•</span>
+
+            <span>
+              OD: ${car.odExpiry || '-'}
+            </span>
           </div>
 
           <div class="price-row">
-
             <div class="price">
               ${formatPrice(car.price)}
             </div>
