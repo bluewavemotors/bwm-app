@@ -566,17 +566,42 @@ function initInfiniteSlider() {
   if(!slider)
     return;
 
+  let touchStartX = 0;
+
+  let touchEndX = 0;
+
   slider.addEventListener(
-    'scroll',
-    function() {
+    'touchstart',
+    function(e) {
+
+      touchStartX =
+      e.changedTouches[0].screenX;
+
+    }
+  );
+
+  slider.addEventListener(
+    'touchend',
+    function(e) {
+
+      touchEndX =
+      e.changedTouches[0].screenX;
 
       const maxScroll =
       slider.scrollWidth -
       slider.clientWidth;
 
+      const atLastImage =
+      slider.scrollLeft >=
+      maxScroll - 5;
+
+      const swipedLeft =
+      touchEndX < touchStartX - 40;
+
+      // ONLY after extra swipe
       if(
-        slider.scrollLeft >=
-        maxScroll - 5
+        atLastImage &&
+        swipedLeft
       ) {
 
         slider.scrollTo({
