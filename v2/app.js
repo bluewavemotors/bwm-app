@@ -748,14 +748,17 @@ function applyFilters() {
   ) {
 
     const limit =
-    Number(activeFilter);
+    Number(activeFilter) * 100000;
 
     filtered =
     filtered.filter(car => {
 
+      const carPrice =
+      parsePrice(car.price);
+
       return (
-        parsePrice(car.price)
-        <= limit
+        carPrice > 0 &&
+        carPrice <= limit
       );
 
     });
