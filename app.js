@@ -153,6 +153,9 @@ function formatDateTime(date) {
 function updateClearButton() {
   const searchInput = document.getElementById("search");
   const clearBtn    = document.getElementById("clearBtn");
+
+  if (!searchInput || !clearBtn) return;   // 🔥 safety check
+
   clearBtn.style.display = searchInput.value.trim() ? "block" : "none";
 }
 
@@ -478,9 +481,10 @@ function showDetails(id) {
 
   if (car.images && car.images.length > 0) {
 
-    const imgs = Array.isArray(car.images)
+    const imgs = (Array.isArray(car.images)
       ? car.images
-      : car.images.split(",").map(s => s.trim()).filter(Boolean);
+      : car.images.split(",").map(s => s.trim()).filter(Boolean)
+    ).sort((a, b) => a.localeCompare(b));
 
     imagesHTML = `
       <div class="image-slider">
@@ -548,6 +552,14 @@ function showDetails(id) {
   enableSwipe();
 }
 
+function updateSelectedCount() {
+  const el = document.getElementById("selectedCount");
+  if (el) {
+    el.innerText = `${selectedImages.length} selected`;
+  }
+}
+
+//Show Selected Count of pictures.
 function openFullscreen(index) {
   const viewer = document.getElementById("fullscreenViewer");
   const img = document.getElementById("fullscreenImg");
@@ -616,8 +628,8 @@ function getOptimizedImage(url, size = 800) {
 
 function clearSearch() {
   document.getElementById("search").value = "";
-  applyFilters();
-  updateClearButton();
+  applyFilters();          // ✅ refresh UI
+  updateClearButton();     // ✅ update button visibility
 }
 
 function goBack() {
@@ -641,6 +653,25 @@ function toggleSelect(index) {
     img.classList.add("selected-img");
     wrap.classList.add("img-selected");
   }
+  updateSelectedCount();
+}
+
+// Select All pictures for sharing.
+function selectAllImages() {
+  selectedImages = currentImages.map((_, i) => i);
+  currentImages.forEach((_, i) => {
+    document.getElementById("img-" + i)?.classList.add("selected");
+  });
+  updateSelectedCount();
+}
+
+// Deselect All pictures for sharing.
+function deselectAllImages() {
+  selectedImages = [];
+  currentImages.forEach((_, i) => {
+    document.getElementById("img-" + i)?.classList.remove("selected");
+  });
+  updateSelectedCount();
 }
 
 // ─── SHARE ────────────────────────────────────────────────────────────────────
