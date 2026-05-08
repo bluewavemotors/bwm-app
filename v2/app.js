@@ -744,11 +744,19 @@ function applyFilters() {
 
   // PRICE FILTERS
   else if(
-    !isNaN(activeFilter)
+    activeFilter.startsWith('price-')
   ) {
 
+    const lakh =
+    Number(
+      activeFilter.replace(
+        'price-',
+        ''
+      )
+    );
+
     const limit =
-    Number(activeFilter) * 100000;
+    lakh * 100000;
 
     filtered =
     filtered.filter(car => {
