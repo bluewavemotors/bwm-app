@@ -116,20 +116,32 @@ function renderCars(cars) {
       car.booked === true ||
       car.booked === "TRUE";
 
-    let badge =
-      showroom
-      ? "AVAILABLE"
-      : "INCOMING";
+    let badgeText =
+    showroom
+    ? "AVAILABLE"
+    : "INCOMING";
 
-    if(booked)
-      badge = "BOOKED";
+    let badgeClass =
+    showroom
+    ? "available"
+    : "incoming";
+
+    if(booked) {
+
+      badgeText =
+      "BOOKED";
+
+      badgeClass =
+      "booked";
+
+    }
 
     carList.innerHTML += `
 
       <div class="car-card" onclick="openDetails('${car.id}')">
 
-        <div class="badge">
-          ${badge}
+        <div class="badge ${badgeClass}">
+          ${badgeText}
         </div>
 
         ${
@@ -174,6 +186,22 @@ function renderCars(cars) {
               ${Number(car.km || 0).toLocaleString('en-IN')} km
             </span>
 
+            <span>•</span>
+
+            <span>
+              Owner ${car.owner || '-'}
+            </span>
+
+            <span>•</span>
+
+            <span>
+              TP: ${car.tpExpiry || '-'}
+            </span>
+
+            <div class="insurance-line">
+              OD:
+              ${car.odExpiry || '-'}
+            </div>
           </div>
 
           <div class="price-row">

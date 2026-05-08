@@ -393,7 +393,7 @@ body {
   wrap;
 
   margin-top:
-  14px;
+  8px;
 
   color:
   #b8c4d6;
@@ -422,7 +422,7 @@ body {
 .price {
 
   font-size:
-  30px;
+  24px;
 
   font-weight:
   800;
@@ -475,6 +475,20 @@ body {
   border-radius:
   999px;
 
+  font-size:
+  12px;
+
+  font-weight:
+  700;
+
+  color:
+  white;
+
+}
+
+
+.badge.available {
+
   background:
   linear-gradient(
     135deg,
@@ -482,11 +496,29 @@ body {
     #00b85d
   );
 
-  font-size:
-  12px;
+}
 
-  font-weight:
-  700;
+
+.badge.incoming {
+
+  background:
+  linear-gradient(
+    135deg,
+    #0a84ff,
+    #4ab5ff
+  );
+
+}
+
+
+.badge.booked {
+
+  background:
+  linear-gradient(
+    135deg,
+    #ff5b6e,
+    #ff2d55
+  );
 
 }
 
@@ -879,7 +911,23 @@ body {
   height: 24px;
 
   filter:
-  brightness(0)
-  invert(1);
+  invert(48%)
+  sepia(92%)
+  saturate(747%)
+  hue-rotate(89deg)
+  brightness(97%)
+  contrast(91%);
+
+}
+
+.insurance-line {
+
+  margin-top: 6px;
+
+  color:
+  #9fb0c8;
+
+  font-size:
+  13px;
 
 }
