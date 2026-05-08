@@ -186,7 +186,10 @@ function renderCars(cars) {
               class="share-btn"
               onclick="shareCar(event, '${car.id}')"
             >
-              📤
+              <img
+                src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/whatsapp.svg"
+                class="wa-icon"
+              >
             </button>
 
           </div>
@@ -243,23 +246,38 @@ function shareCar(event, id) {
 
   if(!car) return;
 
-  const msg = `
-🚗 ${car.brand} ${car.model}
+  const specs = [
 
-📅 ${car.year}
-⛽ ${car.fuel}
-📍 ${Number(car.km || 0).toLocaleString('en-IN')} km
+    car.year || '-',
 
-💰 ${formatPrice(car.price)}
+    car.fuel || '-',
+
+    `${Number(car.km || 0).toLocaleString('en-IN')} km`
+
+  ]
+  .filter(Boolean)
+  .join(' | ');
+
+  const message = `
+
+*${car.brand || ''} ${car.model || ''}*
+
+${specs}
+
+${formatPrice(car.price)}
 
 Blue Wave Motors
-Thrissur
++91 89433 38111
+
   `;
 
   window.open(
+
     "https://wa.me/?text=" +
-    encodeURIComponent(msg),
+    encodeURIComponent(message),
+
     "_blank"
+
   );
 
 }
@@ -484,7 +502,10 @@ function openDetails(id) {
         class="whatsapp-btn"
         onclick="shareCar(event, '${car.id}')"
       >
-        📤 Share on WhatsApp
+        <img
+          src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/whatsapp.svg"
+          class="wa-icon"
+        >
       </button>
 
     </div>
