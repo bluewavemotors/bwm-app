@@ -2,6 +2,7 @@ const API_URL =
 "https://script.google.com/macros/s/AKfycbz8hbybFJOHB2Wn9tSdU-xsS7M7hCo5b2Rpljqs4us0MNvCVF4-Agx1PK7aTVHx-l2k/exec";
 
 let carsData = [];
+let detailTouchStartY = 0;
 
 const carList =
 document.getElementById('carList');
@@ -546,16 +547,18 @@ function openDetails(id) {
 
 
 // CLOSE DETAILS
+function closeDetails() {
+
+  detailView.classList.add('hidden');
+
+  document.body.style.overflow =
+  '';
+
+}
+
 backBtn.addEventListener(
   'click',
-  function() {
-
-    detailView.classList.add('hidden');
-
-    document.body.style.overflow =
-    '';
-
-  }
+  closeDetails
 );
 
 function initInfiniteSlider() {
@@ -618,6 +621,43 @@ function initInfiniteSlider() {
   );
 
 }
+
+detailView.addEventListener(
+  'touchstart',
+  function(e) {
+
+    detailTouchStartY =
+    e.changedTouches[0].screenY;
+
+  }
+);
+
+
+detailView.addEventListener(
+  'touchend',
+  function(e) {
+
+    const touchEndY =
+    e.changedTouches[0].screenY;
+
+    const swipedDown =
+    touchEndY >
+    detailTouchStartY + 70;
+
+    const atTop =
+    detailView.scrollTop <= 5;
+
+    if(
+      swipedDown &&
+      atTop
+    ) {
+
+      closeDetails();
+
+    }
+
+  }
+);
 
 // START
 loadCars();
