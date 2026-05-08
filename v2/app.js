@@ -456,87 +456,67 @@ function openDetails(id) {
 
     <div class="detail-info">
 
-      <div class="detail-title">
+      <div class="car-title">
         ${car.brand || ''}
         ${car.model || ''}
       </div>
 
-      <div class="detail-variant">
+      <div class="car-variant">
         ${car.variant || ''}
       </div>
 
-      <div class="price-badge">
-        ${formatPrice(car.price)}
-      </div>
+      <div class="car-meta">
 
-      <div class="spec-grid">
+        <span>${car.year || '-'}</span>
 
-        <div class="spec-card">
+        <span>•</span>
 
-          <div class="spec-label">
-            Fuel
-          </div>
+        <span>${car.fuel || '-'}</span>
 
-          <div class="spec-value">
-            ${car.fuel || '-'}
-          </div>
+        <span>•</span>
 
-        </div>
+        <span>
+          ${Number(car.km || 0).toLocaleString('en-IN')} km
+        </span>
 
-        <div class="spec-card">
+        <span>•</span>
 
-          <div class="spec-label">
-            Year
-          </div>
+        <span>
+          Owner ${car.owner || '-'}
+        </span>
 
-          <div class="spec-value">
-            ${car.year || '-'}
-          </div>
+        <span>•</span>
 
-        </div>
+        <span>
+          TP: ${car.tpExpiry || '-'}
+        </span>
 
-        <div class="spec-card">
+        <span>•</span>
 
-          <div class="spec-label">
-            KM Driven
-          </div>
-
-          <div class="spec-value">
-            ${Number(car.km || 0).toLocaleString('en-IN')}
-          </div>
-
-        </div>
-
-        <div class="spec-card">
-
-          <div class="spec-label">
-            Color
-          </div>
-
-          <div class="spec-value">
-            ${car.color || '-'}
-          </div>
-
-        </div>
+        <span>
+          OD: ${car.odExpiry || '-'}
+        </span>
 
       </div>
 
-    </div>
+      <div class="price-row">
 
-    <div class="detail-actions">
+        <div class="price">
+          ${formatPrice(car.price)}
+        </div>
 
-      <button
-        class="whatsapp-btn"
-        onclick="shareCar(event, '${car.id}')"
-      >
-        <img
-          src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/whatsapp.svg"
-          class="wa-icon"
+        <button
+          class="share-btn"
+          onclick="shareCar(event, '${car.id}')"
         >
-      </button>
 
+          <img
+            src=\"https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/whatsapp.svg\"
+            class=\"wa-icon\"
+          >
+
+        </button>
     </div>
-
   `;
 
   detailView.classList.remove('hidden');
