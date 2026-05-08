@@ -790,3 +790,59 @@ body {
   contrast(91%);
 
 }
+
+.detail-slider-wrapper {
+
+  position:
+  relative;
+
+}
+
+
+.detail-image-wrap {
+
+  position:
+  relative;
+
+  flex-shrink:
+  0;
+
+  width:
+  100%;
+
+}
+
+
+.image-count {
+
+  position:
+  absolute;
+
+  right:
+  16px;
+
+  bottom:
+  16px;
+
+  padding:
+  7px 14px;
+
+  border-radius:
+  999px;
+
+  background:
+  rgba(0,0,0,0.45);
+
+  color:
+  white;
+
+  font-size:
+  13px;
+
+  font-weight:
+  600;
+
+  backdrop-filter:
+  blur(8px);
+
+}

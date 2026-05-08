@@ -429,29 +429,46 @@ function openDetails(id) {
 
   detailContent.innerHTML = `
 
-    <div class="detail-image-slider">
+    <div class="detail-slider-wrapper">
 
-      ${
-        images.length
+      <div
+        class="detail-image-slider"
+        id="detailSlider"
+      >
 
-        ? images.map(img => `
+        ${
+          images.length
 
-          <img
-            src="${getOptimizedImage(img)}"
-            class="detail-image"
-          >
+          ? images.map((img,index) => `
 
-        `).join('')
+            <div class="detail-image-wrap">
 
-        : `
+              <img
+                src="${getOptimizedImage(img)}"
+                class="detail-image"
+              >
 
-          <div class="no-image">
-            No Images
-          </div>
+              <div class="image-count">
 
-        `
-      }
+                ${index + 1}
+                /
+                ${images.length}
 
+              </div>
+
+            </div>
+
+          `).join('')
+
+          : `
+
+            <div class="no-image">
+              No Images
+            </div>
+
+          `
+        }
+      </div>
     </div>
 
     <div class="detail-info">
@@ -520,6 +537,7 @@ function openDetails(id) {
   `;
 
   detailView.classList.remove('hidden');
+  initInfiniteSlider();
 
   document.body.style.overflow =
   'hidden';
@@ -539,6 +557,42 @@ backBtn.addEventListener(
 
   }
 );
+
+function initInfiniteSlider() {
+
+  const slider =
+  document.getElementById('detailSlider');
+
+  if(!slider)
+    return;
+
+  slider.addEventListener(
+    'scroll',
+    function() {
+
+      const maxScroll =
+      slider.scrollWidth -
+      slider.clientWidth;
+
+      if(
+        slider.scrollLeft >=
+        maxScroll - 5
+      ) {
+
+        slider.scrollTo({
+
+          left: 0,
+
+          behavior: 'smooth'
+
+        });
+
+      }
+
+    }
+  );
+
+}
 
 // START
 loadCars();
