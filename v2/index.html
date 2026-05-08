@@ -1,1 +1,149 @@
-<h1>BWM v2</h1>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>BWM Inventory v2</title>
+
+  <link rel="manifest" href="./manifest.json">
+
+  <meta name="theme-color" content="#081120">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./style.css">
+
+</head>
+
+<body>
+
+  <div class="app">
+
+    <!-- TOP HEADER -->
+    <header class="topbar">
+
+      <div class="brand-row">
+
+        <div class="brand-left">
+
+          <img src="./logo.png" class="logo">
+
+          <div>
+            <div class="brand-title">
+              BLUE WAVE MOTORS
+            </div>
+
+            <div class="brand-sub">
+              Premium Pre-Owned Luxury Cars
+            </div>
+          </div>
+
+        </div>
+
+        <button class="notify-btn">
+          🔔
+        </button>
+
+      </div>
+
+      <!-- SEARCH -->
+      <div class="search-box">
+
+        <input
+          type="text"
+          id="search"
+          placeholder="Search BMW, Benz, Diesel..."
+        >
+
+        <button class="search-filter-btn">
+          ⚙
+        </button>
+
+      </div>
+
+      <!-- FILTER PILLS -->
+      <div class="filter-pills">
+
+        <button class="pill active">
+          All
+        </button>
+
+        <button class="pill">
+          Diesel
+        </button>
+
+        <button class="pill">
+          Petrol
+        </button>
+
+        <button class="pill">
+          Under 20L
+        </button>
+
+        <button class="pill">
+          Showroom
+        </button>
+
+      </div>
+
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main id="carList">
+
+    </main>
+
+    <!-- FLOAT BUTTON -->
+    <button class="fab">
+      +
+    </button>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+
+      <button class="nav-item active">
+        <span>🏠</span>
+        <small>Inventory</small>
+      </button>
+
+      <button class="nav-item">
+        <span>🔥</span>
+        <small>Premium</small>
+      </button>
+
+      <button class="nav-item">
+        <span>📤</span>
+        <small>Shared</small>
+      </button>
+
+      <button class="nav-item">
+        <span>⚙</span>
+        <small>More</small>
+      </button>
+
+    </nav>
+
+  </div>
+
+  <script src="./app.js"></script>
+
+  <script>
+
+    if ('serviceWorker' in navigator) {
+
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(() => console.log('SW Registered'));
+
+    }
+
+  </script>
+
+</body>
+
+</html>
