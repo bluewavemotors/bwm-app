@@ -102,8 +102,6 @@ function renderCars(cars) {
 
     }
 
-    images.sort();
-
     const image =
     images.length
     ? getOptimizedImage(images[0])
@@ -383,8 +381,6 @@ function openDetails(id) {
     .filter(Boolean);
 
   }
-
-  images.sort();
 
   detailContent.innerHTML = `
 
