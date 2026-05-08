@@ -2,6 +2,7 @@ const API_URL =
 "https://script.google.com/macros/s/AKfycbz8hbybFJOHB2Wn9tSdU-xsS7M7hCo5b2Rpljqs4us0MNvCVF4-Agx1PK7aTVHx-l2k/exec";
 
 let carsData = [];
+let activeFilter = 'all';
 let detailTouchStartY = 0;
 
 const carList =
@@ -37,10 +38,9 @@ async function loadCars() {
     const result =
     await response.json();
 
-    carsData =
-    result.cars || [];
+    carsData = result.cars || [];
 
-    renderCars(carsData);
+    applyFilters();
 
   }
 
@@ -236,31 +236,7 @@ function renderCars(cars) {
 // SEARCH
 searchInput.addEventListener(
   'input',
-  function() {
-
-    const value =
-    this.value.toLowerCase();
-
-    const filtered =
-    carsData.filter(car => {
-
-      const text = `
-        ${car.brand}
-        ${car.model}
-        ${car.variant}
-        ${car.fuel}
-        ${car.color}
-        ${car.year}
-      `
-      .toLowerCase();
-
-      return text.includes(value);
-
-    });
-
-    renderCars(filtered);
-
-  }
+  applyFilters
 );
 
 
@@ -658,6 +634,138 @@ detailView.addEventListener(
 
   }
 );
+
+const filterPills =
+document.querySelectorAll('.pill');
+
+
+filterPills.forEach(pill => {
+
+  pill.addEventListener(
+    'click',
+    function() {
+
+      filterPills.forEach(p => {
+
+        p.classList.remove('active');
+
+      });
+
+      this.classList.add('active');
+
+      activeFilter =
+      this.dataset.filter;
+
+      applyFilters();
+
+    }
+  );
+
+});
+
+
+function applyFilters() {
+
+  const searchValue =
+  searchInput.value
+  .toLowerCase();
+
+  let filtered =
+  [...carsData];
+
+
+  // SEARCH
+  filtered =
+  filtered.filter(car => {
+
+    const text = `
+
+      ${car.brand || ''}
+
+      ${car.model || ''}
+
+      ${car.variant || ''}
+
+      ${car.fuel || ''}
+
+      ${car.color || ''}
+
+      ${car.year || ''}
+
+    `
+    .toLowerCase();
+
+    return text.includes(searchValue);
+
+  });
+
+
+  // FILTERS
+  if(activeFilter === 'diesel') {
+
+    filtered =
+    filtered.filter(car =>
+
+      (car.fuel || '')
+      .toLowerCase()
+      .includes('diesel')
+
+    );
+
+  }
+
+
+  else if(activeFilter === 'petrol') {
+
+    filtered =
+    filtered.filter(car =>
+
+      (car.fuel || '')
+      .toLowerCase()
+      .includes('petrol')
+
+    );
+
+  }
+
+
+  else if(activeFilter === 'showroom') {
+
+    filtered =
+    filtered.filter(car =>
+
+      car.showroom === true ||
+      car.showroom === 'TRUE'
+
+    );
+
+  }
+
+
+  // PRICE FILTERS
+  else if(
+    !isNaN(activeFilter)
+  ) {
+
+    const limit =
+    Number(activeFilter);
+
+    filtered =
+    filtered.filter(car => {
+
+      return (
+        parsePrice(car.price)
+        <= limit
+      );
+
+    });
+
+  }
+
+
+  renderCars(filtered);
+
+}
 
 // START
 loadCars();
