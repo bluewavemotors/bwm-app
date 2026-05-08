@@ -110,7 +110,7 @@ function renderCars(cars) {
 
     carList.innerHTML += `
 
-      <div class="car-card">
+      <div class="car-card" onclick="openDetails('${car.id}')">
 
         <div class="badge">
           ${badge}
@@ -330,6 +330,158 @@ function formatPrice(price) {
 
 }
 
+const detailView =
+document.getElementById('detailView');
+
+const detailContent =
+document.getElementById('detailContent');
+
+const backBtn =
+document.getElementById('backBtn');
+
+
+// OPEN DETAILS
+function openDetails(id) {
+
+  const car =
+  carsData.find(c => c.id == id);
+
+  if(!car) return;
+
+  const images =
+    Array.isArray(car.images)
+    ? car.images
+    : [];
+
+  detailContent.innerHTML = `
+
+    <div class="detail-image-slider">
+
+      ${
+        images.length
+
+        ? images.map(img => `
+
+          <img
+            src="${getOptimizedImage(img)}"
+            class="detail-image"
+          >
+
+        `).join('')
+
+        : `
+
+          <div class="no-image">
+            No Images
+          </div>
+
+        `
+      }
+
+    </div>
+
+    <div class="detail-info">
+
+      <div class="detail-title">
+        ${car.brand || ''}
+        ${car.model || ''}
+      </div>
+
+      <div class="detail-variant">
+        ${car.variant || ''}
+      </div>
+
+      <div class="price-badge">
+        ${formatPrice(car.price)}
+      </div>
+
+      <div class="spec-grid">
+
+        <div class="spec-card">
+
+          <div class="spec-label">
+            Fuel
+          </div>
+
+          <div class="spec-value">
+            ${car.fuel || '-'}
+          </div>
+
+        </div>
+
+        <div class="spec-card">
+
+          <div class="spec-label">
+            Year
+          </div>
+
+          <div class="spec-value">
+            ${car.year || '-'}
+          </div>
+
+        </div>
+
+        <div class="spec-card">
+
+          <div class="spec-label">
+            KM Driven
+          </div>
+
+          <div class="spec-value">
+            ${Number(car.km || 0).toLocaleString('en-IN')}
+          </div>
+
+        </div>
+
+        <div class="spec-card">
+
+          <div class="spec-label">
+            Color
+          </div>
+
+          <div class="spec-value">
+            ${car.color || '-'}
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="detail-actions">
+
+      <button
+        class="whatsapp-btn"
+        onclick="shareCar(event, '${car.id}')"
+      >
+        📤 Share on WhatsApp
+      </button>
+
+    </div>
+
+  `;
+
+  detailView.classList.remove('hidden');
+
+  document.body.style.overflow =
+  'hidden';
+
+}
+
+
+// CLOSE DETAILS
+backBtn.addEventListener(
+  'click',
+  function() {
+
+    detailView.classList.add('hidden');
+
+    document.body.style.overflow =
+    '';
+
+  }
+);
 
 // START
 loadCars();
