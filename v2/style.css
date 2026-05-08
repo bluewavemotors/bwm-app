@@ -612,3 +612,19 @@ body {
   white;
 
 }
+
+.no-image {
+
+  height: 240px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  background: rgba(255,255,255,0.04);
+
+  color: #7f8a9b;
+
+}

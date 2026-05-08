@@ -1,118 +1,175 @@
-const cars = [
+const API_URL =
+"https://script.google.com/macros/s/AKfycbz8hbybFJOHB2Wn9tSdU-xsS7M7hCo5b2Rpljqs4us0MNvCVF4-Agx1PK7aTVHx-l2k/exec";
 
-  {
-
-    brand: "BMW",
-    model: "330Li",
-
-    variant: "M Sport",
-
-    year: "2022",
-
-    fuel: "Petrol",
-
-    km: "18,000 km",
-
-    price: "48.90 Lakh",
-
-    image:
-    "https://images.unsplash.com/photo-1555215695-3004980ad54e?q=80&w=1200"
-
-  },
-
-  {
-
-    brand: "Mercedes-Benz",
-    model: "E200",
-
-    variant: "Exclusive",
-
-    year: "2021",
-
-    fuel: "Petrol",
-
-    km: "32,000 km",
-
-    price: "46.75 Lakh",
-
-    image:
-    "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=1200"
-
-  },
-
-  {
-
-    brand: "Audi",
-    model: "Q5",
-
-    variant: "Quattro",
-
-    year: "2022",
-
-    fuel: "Diesel",
-
-    km: "22,000 km",
-
-    price: "52.50 Lakh",
-
-    image:
-    "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200"
-
-  }
-
-];
+let carsData = [];
 
 const carList =
 document.getElementById('carList');
 
-function renderCars() {
+const searchInput =
+document.getElementById('search');
+
+
+// LOAD CARS
+async function loadCars() {
+
+  try {
+
+    carList.innerHTML = `
+      <div style="
+        text-align:center;
+        padding:40px;
+        color:#9ca8b7;
+      ">
+        Loading inventory...
+      </div>
+    `;
+
+    const response =
+    await fetch(
+      API_URL + "?key=BWM@2026",
+      {
+        cache: "no-store"
+      }
+    );
+
+    const result =
+    await response.json();
+
+    carsData =
+    result.cars || [];
+
+    renderCars(carsData);
+
+  }
+
+  catch(err) {
+
+    console.error(err);
+
+    carList.innerHTML = `
+      <div style="
+        text-align:center;
+        padding:40px;
+        color:#ff6b6b;
+      ">
+        Failed to load inventory
+      </div>
+    `;
+
+  }
+
+}
+
+
+// RENDER
+function renderCars(cars) {
 
   carList.innerHTML = '';
 
+  if(!cars.length) {
+
+    carList.innerHTML = `
+      <div style="
+        text-align:center;
+        padding:40px;
+        color:#9ca8b7;
+      ">
+        No cars found
+      </div>
+    `;
+
+    return;
+  }
+
   cars.forEach(car => {
+
+    const image =
+      Array.isArray(car.images) &&
+      car.images.length
+
+      ? getOptimizedImage(car.images[0])
+
+      : '';
+
+    const showroom =
+      car.showroom === true ||
+      car.showroom === "TRUE";
+
+    const booked =
+      car.booked === true ||
+      car.booked === "TRUE";
+
+    let badge =
+      showroom
+      ? "AVAILABLE"
+      : "INCOMING";
+
+    if(booked)
+      badge = "BOOKED";
 
     carList.innerHTML += `
 
       <div class="car-card">
 
         <div class="badge">
-          AVAILABLE
+          ${badge}
         </div>
 
-        <img
-          src="${car.image}"
-          class="car-image"
-        >
+        ${
+          image
+
+          ? `
+            <img
+              src="${image}"
+              class="car-image"
+              loading="lazy"
+            >
+          `
+
+          : `
+            <div class="no-image">
+              No Image
+            </div>
+          `
+        }
 
         <div class="card-content">
 
           <div class="car-title">
-            ${car.brand} ${car.model}
+            ${car.brand || ''} ${car.model || ''}
           </div>
 
           <div class="car-variant">
-            ${car.variant}
+            ${car.variant || ''}
           </div>
 
           <div class="car-meta">
 
-            <span>${car.year}</span>
+            <span>${car.year || '-'}</span>
+
             <span>•</span>
 
-            <span>${car.fuel}</span>
+            <span>${car.fuel || '-'}</span>
+
             <span>•</span>
 
-            <span>${car.km}</span>
+            <span>
+              ${Number(car.km || 0).toLocaleString('en-IN')} km
+            </span>
 
           </div>
 
           <div class="price-row">
 
             <div class="price">
-              ₹ ${car.price}
+              ${formatPrice(car.price)}
             </div>
 
-            <button class="share-btn">
+            <button
+              class="share-btn"
+              onclick="shareCar(event, '${car.id}')"
+            >
               📤
             </button>
 
@@ -128,4 +185,151 @@ function renderCars() {
 
 }
 
-renderCars();
+
+// SEARCH
+searchInput.addEventListener(
+  'input',
+  function() {
+
+    const value =
+    this.value.toLowerCase();
+
+    const filtered =
+    carsData.filter(car => {
+
+      const text = `
+        ${car.brand}
+        ${car.model}
+        ${car.variant}
+        ${car.fuel}
+        ${car.color}
+        ${car.year}
+      `
+      .toLowerCase();
+
+      return text.includes(value);
+
+    });
+
+    renderCars(filtered);
+
+  }
+);
+
+
+// SHARE
+function shareCar(event, id) {
+
+  event.stopPropagation();
+
+  const car =
+  carsData.find(c => c.id == id);
+
+  if(!car) return;
+
+  const msg = `
+🚗 ${car.brand} ${car.model}
+
+📅 ${car.year}
+⛽ ${car.fuel}
+📍 ${Number(car.km || 0).toLocaleString('en-IN')} km
+
+💰 ${formatPrice(car.price)}
+
+Blue Wave Motors
+Thrissur
+  `;
+
+  window.open(
+    "https://wa.me/?text=" +
+    encodeURIComponent(msg),
+    "_blank"
+  );
+
+}
+
+
+// IMAGE
+function getOptimizedImage(
+  url,
+  size = 1200
+) {
+
+  if(!url) return '';
+
+  if(url.includes('googleusercontent.com'))
+    return url;
+
+  const match =
+  url.match(/[-\\w]{25,}/);
+
+  if(!match)
+    return url;
+
+  return `
+https://drive.google.com/thumbnail?id=${match[0]}&sz=w${size}
+  `;
+}
+
+
+// PRICE
+function parsePrice(price) {
+
+  if(!price) return 0;
+
+  let text =
+  price.toString()
+  .toLowerCase();
+
+  text =
+  text.replace(/,/g,'');
+
+  const match =
+  text.match(/[\\d.]+/);
+
+  if(!match)
+    return 0;
+
+  let number =
+  parseFloat(match[0]);
+
+  if(text.includes('crore'))
+    return number * 10000000;
+
+  if(
+    text.includes('lakh') ||
+    text.includes('l')
+  )
+    return number * 100000;
+
+  return number;
+
+}
+
+
+function formatPrice(price) {
+
+  const n =
+  parsePrice(price);
+
+  if(!n)
+    return price;
+
+  if(n >= 10000000)
+    return '₹ ' +
+    (n / 10000000).toFixed(2) +
+    ' Cr';
+
+  if(n >= 100000)
+    return '₹ ' +
+    (n / 100000).toFixed(2) +
+    ' Lakh';
+
+  return '₹ ' +
+  n.toLocaleString('en-IN');
+
+}
+
+
+// START
+loadCars();
