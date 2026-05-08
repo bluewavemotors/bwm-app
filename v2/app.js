@@ -84,13 +84,31 @@ function renderCars(cars) {
 
   cars.forEach(car => {
 
+    let images = [];
+
+    if(Array.isArray(car.images)) {
+
+      images = car.images;
+
+    }
+
+    else if(typeof car.images === 'string') {
+
+      images =
+      car.images
+      .split(',')
+      .map(i => i.trim())
+      .filter(Boolean);
+
+    }
+
+    images.sort();
+
     const image =
-      Array.isArray(car.images) &&
-      car.images.length
+    images.length
+    ? getOptimizedImage(images[0])
+    : '';
 
-      ? getOptimizedImage(car.images[0])
-
-      : '';
 
     const showroom =
       car.showroom === true ||
@@ -348,10 +366,25 @@ function openDetails(id) {
 
   if(!car) return;
 
-  const images =
-    Array.isArray(car.images)
-    ? car.images
-    : [];
+  let images = [];
+
+  if(Array.isArray(car.images)) {
+
+    images = car.images;
+
+  }
+
+  else if(typeof car.images === 'string') {
+
+    images =
+    car.images
+    .split(',')
+    .map(i => i.trim())
+    .filter(Boolean);
+
+  }
+
+  images.sort();
 
   detailContent.innerHTML = `
 
