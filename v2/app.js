@@ -127,10 +127,22 @@ function renderCars(cars) {
     ? "available"
     : "incoming";
 
+
     if(booked) {
 
-      badgeText =
-      "BOOKED";
+      if(showroom) {
+
+        badgeText =
+        "BOOKED / IN SHOWROOM";
+
+      }
+
+      else {
+
+        badgeText =
+        "BOOKED / INCOMING";
+
+      }
 
       badgeClass =
       "booked";
@@ -772,7 +784,6 @@ function applyFilters() {
     });
 
   }
-
 
   renderCars(filtered);
 
