@@ -907,8 +907,7 @@ body {
 
 }
 
-
-.image-nav {
+.detail-arrow {
 
   position:
   absolute;
@@ -920,10 +919,10 @@ body {
   translateY(-50%);
 
   width:
-  34px;
+  42px;
 
   height:
-  34px;
+  42px;
 
   border-radius:
   50%;
@@ -944,7 +943,7 @@ body {
   center;
 
   font-size:
-  26px;
+  28px;
 
   font-weight:
   300;
@@ -958,17 +957,17 @@ body {
 }
 
 
-.image-nav.left {
+.detail-arrow.left {
 
   left:
-  12px;
+  14px;
 
 }
 
 
-.image-nav.right {
+.detail-arrow.right {
 
   right:
-  12px;
+  14px;
 
 }

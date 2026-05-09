@@ -49,46 +49,94 @@ async function fetchWithTimeout(
 
 
 // LOAD CARS
-async function loadCars() {
+async function loadCars(retryCount = 0) {
 
   try {
 
     carList.innerHTML = `
+
       <div style="
         text-align:center;
-        padding:40px;
+        padding:50px 20px;
         color:#9ca8b7;
       ">
+
         Loading inventory...
+
       </div>
+
     `;
 
     const response =
     await fetchWithTimeout(
-      API_URL + "?key=BWM@2026",
+
+      API_URL + "?key=BWM@2026&_=" + Date.now(),
+
       {
         cache: "no-store",
-        timeout: 40000  //wait 40 seconds.
+        timeout: 40000
       }
+
     );
 
-    const result =
-    await response.json();
+    // Sometimes GAS returns HTML
+    const text =
+    await response.text();
 
-    carsData = result.cars || [];
+    let result;
+
+    try {
+
+      result =
+      JSON.parse(text);
+
+    }
+
+    catch(jsonErr) {
+
+      throw new Error(
+        "Invalid JSON response"
+      );
+
+    }
+
+    carsData =
+    result.cars || [];
 
     applyFilters();
 
   }
 
   catch(err) {
-    console.error(err);
+
+    console.log(
+      'Load failed:',
+      retryCount,
+      err
+    );
+
+    // AUTO RETRY
+    if(retryCount < 3) {
+
+      setTimeout(() => {
+
+        loadCars(retryCount + 1);
+
+      }, 2500);
+
+      return;
+
+    }
+
+    // FINAL FAILURE UI
     carList.innerHTML = `
 
       <div class="retry-box">
 
         <div class="retry-title">
+
           Unable to load inventory
+
         </div>
 
         <button
@@ -101,7 +149,9 @@ async function loadCars() {
       </div>
 
     `;
+
   }
+
 }
 
 
@@ -220,26 +270,7 @@ function renderCars(cars) {
           image
 
           ? `
-            <div class="card-image-wrap">
-              <img
-                src="${image}"
-                class="car-image"
-                loading="lazy"
-              >
-
-              <div class="image-nav left">
-
-                ‹
-
-              </div>
-
-              <div class="image-nav right">
-
-                ›
-
-              </div>
-
-            </div>
+            
           `
 
           : `
@@ -505,6 +536,13 @@ function openDetails(id) {
           ? images.map((img,index) => `
 
             <div class="detail-image-wrap">
+              <div class="detail-arrow left">
+                ‹
+              </div>
+
+              <div class="detail-arrow right">
+                ›
+              </div>
 
               <img
                 src="${getOptimizedImage(img)}"
