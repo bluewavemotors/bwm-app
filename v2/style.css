@@ -952,7 +952,7 @@ body {
   blur(8px);
 
   pointer-events:
-  none;
+  auto;
 
 }
 

@@ -535,13 +535,26 @@ function openDetails(id) {
 
           ? images.map((img,index) => `
 
-            <div class="detail-image-wrap">
-              <div class="detail-arrow left">
+            <div
+              class="detail-image-wrap"
+              data-index="${index}"
+            >
+              <div
+                class="detail-arrow left"
+                onclick="slideDetailImages(-1)"
+              >
+
                 ‹
+
               </div>
 
-              <div class="detail-arrow right">
+              <div
+                class="detail-arrow right"
+                onclick="slideDetailImages(1)"
+              >
+
                 ›
+
               </div>
 
               <img
@@ -898,6 +911,49 @@ function applyFilters() {
   }
 
   renderCars(filtered);
+
+}
+
+function slideDetailImages(direction) {
+
+  const slider =
+  document.getElementById('detailSlider');
+
+  if(!slider)
+    return;
+
+  const imageWidth =
+  slider.clientWidth;
+
+  const maxScroll =
+  slider.scrollWidth -
+  slider.clientWidth;
+
+  let target =
+  slider.scrollLeft +
+  (imageWidth * direction);
+
+  // LOOP TO FIRST
+  if(target > maxScroll) {
+
+    target = 0;
+
+  }
+
+  // LOOP TO LAST
+  if(target < 0) {
+
+    target = maxScroll;
+
+  }
+
+  slider.scrollTo({
+
+    left: target,
+
+    behavior: 'smooth'
+
+  });
 
 }
 
