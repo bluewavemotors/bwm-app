@@ -452,7 +452,7 @@ function parsePrice(price) {
   text.replace(/,/g,'');
 
   const match =
-  text.match(/[\\d.]+/);
+  text.match(/[\d.]+/);
 
   if(!match)
     return 0;
