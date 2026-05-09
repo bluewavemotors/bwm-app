@@ -270,13 +270,25 @@ function renderCars(cars) {
           image
 
           ? `
-            
+
+            <div class="card-image-wrap">
+
+              <img
+                src="${image}"
+                class="car-image"
+                loading="lazy"
+              >
+
+            </div>
+
           `
 
           : `
+
             <div class="no-image">
               No Image
             </div>
+
           `
         }
 

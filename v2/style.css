@@ -734,6 +734,8 @@ body {
 
 .detail-image {
 
+  min-width: 100%;
+
   width: 100%;
 
   height: 320px;
@@ -806,6 +808,9 @@ body {
 
   flex-shrink:
   0;
+
+  min-width:
+  100%;
 
   width:
   100%;
