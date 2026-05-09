@@ -108,14 +108,31 @@ function renderCars(cars) {
     ? getOptimizedImage(images[0])
     : '';
 
-
     const showroom =
-      car.showroom === true ||
-      car.showroom === "TRUE";
+      [
+        true,
+        'true',
+        'TRUE',
+        'yes',
+        'YES',
+        '1',
+        1
+      ]
+      .includes(car.showroom);
 
-    const booked =
-      car.booked === true ||
-      car.booked === "TRUE";
+      const booked =
+      [
+        true,
+        'true',
+        'TRUE',
+        'yes',
+        'YES',
+        'booked',
+        'BOOKED',
+        '1',
+        1
+      ]
+      .includes(car.booked);
 
     let badgeText =
     showroom
