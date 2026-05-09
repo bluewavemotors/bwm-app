@@ -68,7 +68,7 @@ async function loadCars() {
       API_URL + "?key=BWM@2026",
       {
         cache: "no-store",
-        timeout: 20000  //wait 20 seconds.
+        timeout: 40000  //wait 40 seconds.
       }
     );
 
@@ -220,11 +220,26 @@ function renderCars(cars) {
           image
 
           ? `
-            <img
-              src="${image}"
-              class="car-image"
-              loading="lazy"
-            >
+            <div class="card-image-wrap">
+              <img
+                src="${image}"
+                class="car-image"
+                loading="lazy"
+              >
+
+              <div class="image-nav left">
+
+                ‹
+
+              </div>
+
+              <div class="image-nav right">
+
+                ›
+
+              </div>
+
+            </div>
           `
 
           : `

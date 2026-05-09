@@ -899,3 +899,76 @@ body {
   700;
 
 }
+
+.card-image-wrap {
+
+  position:
+  relative;
+
+}
+
+
+.image-nav {
+
+  position:
+  absolute;
+
+  top:
+  50%;
+
+  transform:
+  translateY(-50%);
+
+  width:
+  34px;
+
+  height:
+  34px;
+
+  border-radius:
+  50%;
+
+  background:
+  rgba(0,0,0,0.28);
+
+  color:
+  white;
+
+  display:
+  flex;
+
+  align-items:
+  center;
+
+  justify-content:
+  center;
+
+  font-size:
+  26px;
+
+  font-weight:
+  300;
+
+  backdrop-filter:
+  blur(8px);
+
+  pointer-events:
+  none;
+
+}
+
+
+.image-nav.left {
+
+  left:
+  12px;
+
+}
+
+
+.image-nav.right {
+
+  right:
+  12px;
+
+}
