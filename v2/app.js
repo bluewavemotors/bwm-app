@@ -11,6 +11,42 @@ document.getElementById('carList');
 const searchInput =
 document.getElementById('search');
 
+async function fetchWithTimeout(
+
+  resource,
+
+  options = {}
+
+) {
+
+  const timeout =
+  options.timeout || 15000;
+
+  const controller =
+  new AbortController();
+
+  const id =
+  setTimeout(
+    () => controller.abort(),
+    timeout
+  );
+
+  const response =
+  await fetch(resource, {
+
+    ...options,
+
+    signal:
+    controller.signal
+
+  });
+
+  clearTimeout(id);
+
+  return response;
+
+}
+
 
 // LOAD CARS
 async function loadCars() {
@@ -28,10 +64,11 @@ async function loadCars() {
     `;
 
     const response =
-    await fetch(
+    await fetchWithTimeout(
       API_URL + "?key=BWM@2026",
       {
-        cache: "no-store"
+        cache: "no-store",
+        timeout: 20000  //wait 20 seconds.
       }
     );
 
@@ -45,21 +82,26 @@ async function loadCars() {
   }
 
   catch(err) {
-
     console.error(err);
-
     carList.innerHTML = `
-      <div style="
-        text-align:center;
-        padding:40px;
-        color:#ff6b6b;
-      ">
-        Failed to load inventory
+
+      <div class="retry-box">
+
+        <div class="retry-title">
+          Unable to load inventory
+        </div>
+
+        <button
+          class="retry-btn"
+          onclick="loadCars()"
+        >
+          Retry
+        </button>
+
       </div>
+
     `;
-
   }
-
 }
 
 
