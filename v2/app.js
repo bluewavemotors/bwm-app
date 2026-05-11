@@ -412,14 +412,21 @@ async function shareCar(event, carId){
 
     );
 
+    const text =
+    await response.text();
+
+    console.log(text);
+
     const result =
-    await response.json();
+    JSON.parse(text);
 
     if(!result.shareId){
 
       alert(
         'Unable to create share'
       );
+
+      console.log(result);
 
       return;
 
@@ -431,7 +438,7 @@ async function shareCar(event, carId){
 
       result.shareId;
 
-    const text =
+    const textMessage =
 
 `*${car.brand} ${car.model}*
 
@@ -448,7 +455,7 @@ Blue Wave Motors
 
       'https://wa.me/?text=' +
 
-      encodeURIComponent(text),
+      encodeURIComponent(textMessage),
 
       '_blank'
 
@@ -458,11 +465,11 @@ Blue Wave Motors
 
   catch(err){
 
+    console.log(err);
+
     alert(
       'Share failed'
     );
-
-    console.log(err);
 
   }
 
