@@ -370,48 +370,101 @@ searchInput.addEventListener(
 
 
 // SHARE
-function shareCar(event, id) {
+async function shareCar(event, carId){
 
   event.stopPropagation();
 
   const car =
-  carsData.find(c => c.id == id);
+  carsData.find(c =>
 
-  if(!car) return;
-
-  const specs = [
-
-    car.year || '-',
-
-    car.fuel || '-',
-
-    `${Number(car.km || 0).toLocaleString('en-IN')} km`
-
-  ]
-  .filter(Boolean)
-  .join(' | ');
-
-  const message = `
-
-*${car.brand || ''} ${car.model || ''}*
-
-${specs}
-
-${formatPrice(car.price)}
-
-Blue Wave Motors
-+91 89433 38111
-
-  `;
-
-  window.open(
-
-    "https://wa.me/?text=" +
-    encodeURIComponent(message),
-
-    "_blank"
+    String(c.id) ===
+    String(carId)
 
   );
+
+  if(!car)
+    return;
+
+  try{
+
+    const response =
+    await fetch(
+
+      API_URL +
+
+      '?key=BWM@2026' +
+
+      '&data=' +
+
+      encodeURIComponent(
+
+        JSON.stringify({
+
+          action:
+          'createShare',
+
+          carId:
+          car.id
+
+        })
+
+      )
+
+    );
+
+    const result =
+    await response.json();
+
+    if(!result.shareId){
+
+      alert(
+        'Unable to create share'
+      );
+
+      return;
+
+    }
+
+    const shareLink =
+
+      'https://bluewavemotors.github.io/share/?s=' +
+
+      result.shareId;
+
+    const text =
+
+`*${car.brand} ${car.model}*
+
+${car.year} | ${car.fuel} | ${Number(car.km || 0).toLocaleString('en-IN')} km | Owner ${car.owner || '-'}
+
+${car.price}
+
+${shareLink}
+
+Blue Wave Motors
++91 89433 38111`;
+
+    window.open(
+
+      'https://wa.me/?text=' +
+
+      encodeURIComponent(text),
+
+      '_blank'
+
+    );
+
+  }
+
+  catch(err){
+
+    alert(
+      'Share failed'
+    );
+
+    console.log(err);
+
+  }
 
 }
 
